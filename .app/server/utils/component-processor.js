@@ -1,7 +1,49 @@
+import { watch } from "fs";
+import path from "path";
 import { compileTemplateToHTML } from "./template.js";
 import { getOriginalRoutePath, getPageFiles, getRoutePath, saveClientComponentModule, saveClientRoutesFile, saveComponentHtmlDisk, saveServerRoutesFile, readFile, getImportData, generateComponentId, adjustClientModulePath, PAGES_DIR, ROOT_HTML_DIR, getLayoutPaths } from "./files.js";
 import { renderComponents } from "./streaming.js";
 import { getRevalidateSeconds } from "./cache.js";
+
+/**
+ * In-memory cache for parsed `.html` component files.
+ *
+ * `processHtmlFile` does three expensive things per call:
+ *   1. `fs.readFile` — disk I/O
+ *   2. Regex extraction of <script server>, <script client> and <template> blocks
+ *   3. `new AsyncFunction(...)` + execution to extract getData / getMetadata / getStaticPaths
+ *
+ * None of these results change between requests for the same file, so the output
+ * can be safely reused across the lifetime of the process — in both dev and production.
+ *
+ * In production files never change, so entries are kept forever.
+ * In dev, a file watcher (see below) deletes stale entries whenever a .html file is saved,
+ * so the next request re-parses and re-populates the cache automatically.
+ *
+ * Key:   absolute file path (e.g. /project/pages/home/page.html)
+ * Value: the object returned by _processHtmlFile (getData, template, serverComponents, …)
+ */
+const processHtmlFileCache = new Map();
+
+/**
+ * In dev only: watch pages/ and components/ for .html changes and evict the
+ * corresponding cache entry so the next request picks up the new version.
+ *
+ * This watcher is intentionally skipped in production because:
+ *  - files are immutable after deploy, so invalidation is never needed
+ *  - `fs.watch` keeps the Node process alive and consumes inotify/kqueue handles
+ */
+if (process.env.NODE_ENV !== "production") {
+  const watchDirs = [PAGES_DIR, path.join(path.dirname(PAGES_DIR), "components")];
+  for (const dir of watchDirs) {
+    watch(dir, { recursive: true }, (_, filename) => {
+      if (filename?.endsWith(".html")) {
+        const fullPath = path.join(dir, filename);
+        processHtmlFileCache.delete(fullPath);
+      }
+    });
+  }
+}
 
 const DEFAULT_METADATA = {
   title: "Vanilla JS App",
@@ -99,6 +141,9 @@ const getScriptImports = async (script, isClientSide = false) => {
 };
 
 /**
+ * Raw implementation of the file parser — called only when the cache misses.
+ * Do not call directly; use the exported `processHtmlFile` wrapper instead.
+ *
  * Parses an HTML page or component file and extracts:
  * - Server-side logic
  * - Client-side code
@@ -135,7 +180,7 @@ const getScriptImports = async (script, isClientSide = false) => {
  *   }>
  * }>}
  */
-export async function processHtmlFile(filePath) {
+async function _processHtmlFile(filePath) {
   const content = await readFile(filePath);
 
   const serverMatch = content.match(/<script server>([\s\S]*?)<\/script>/);
@@ -212,6 +257,24 @@ export async function processHtmlFile(filePath) {
     clientComponents,
     clientImports,
   };
+}
+
+/**
+ * Cached wrapper around `_processHtmlFile`.
+ *
+ * Returns the cached result on subsequent calls for the same file, avoiding
+ * repeated disk reads and AsyncFunction construction on every SSR request.
+ * The cache is populated on first access and evicted in dev when the file changes
+ * (see `processHtmlFileCache` watcher above).
+ *
+ * @param {string} filePath - Absolute path to the .html component file.
+ * @returns {Promise<ReturnType<_processHtmlFile>>}
+ */
+export async function processHtmlFile(filePath) {
+  if (processHtmlFileCache.has(filePath)) return processHtmlFileCache.get(filePath);
+  const result = await _processHtmlFile(filePath);
+  processHtmlFileCache.set(filePath, result);
+  return result;
 }
 
 /**
