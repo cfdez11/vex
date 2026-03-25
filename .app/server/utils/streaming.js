@@ -3,8 +3,6 @@ import {
   renderHtmlFile,
 } from "./component-processor.js";
 
-// processNode funcion from compileTemplateToHTML remove binding characters (:)
-const suspenseRegex = /<Suspense\s+fallback="([^"]*)">([\s\S]*?)<\/Suspense>/g;
 
 /**
  * Parses a string of raw HTML-like attributes into a structured object.
@@ -191,10 +189,11 @@ async function renderServerComponents(pageHtml, serverComponents = new Map(), aw
   let suspenseId = 0;
   let html = pageHtml;
 
-  // Process suspense boundaries one by one (not in reverse)
-  let match;
-  suspenseRegex.lastIndex = 0;
+  // Fresh regex per call — avoids the shared-lastIndex race condition.
+  // Each request gets its own regex instance with lastIndex starting at 0.
+  const suspenseRegex = /<Suspense\s+fallback="([^"]*)">([\s\S]*?)<\/Suspense>/g;
 
+  let match;
   while ((match = suspenseRegex.exec(html)) !== null) {
     const id = `suspense-${suspenseId++}`;
     const [fullMatch, fallback, content] = match;
@@ -212,10 +211,10 @@ async function renderServerComponents(pageHtml, serverComponents = new Map(), aw
       content: content,
     });
 
-    // Replace suspense block with container
+    // Replace suspense block with container and restart the search from the
+    // beginning of the modified string (indices have shifted after the replace).
     const replacement = `<div id="${id}">${fallbackHtml}</div>`;
     html = html.replace(fullMatch, replacement);
-    // Reset regex to search from the beginning since we modified the string
     suspenseRegex.lastIndex = 0;
   }
 
@@ -274,15 +273,25 @@ export async function renderComponents({
 }
 
 /**
- * Generates streaming replacement content for a suspense component
- * Note: needs script to hydrate the content on the client side
- * @param {string} suspenseId
- * @param {string} renderedContent
+ * Generates the streaming HTML payload that replaces a Suspense fallback with
+ * the real rendered content once it is ready.
+ *
+ * The payload consists of two parts streamed back-to-back:
+ *  1. A `<template id="…">` holding the rendered HTML (invisible to the user).
+ *  2. A tiny inline `<script>` that calls `window.hydrateTarget(targetId, sourceId)`.
+ *
+ * `window.hydrateTarget` is defined once in root.html via a single
+ * `<script src="hydrate.js">`. Using an inline call instead of a per-boundary
+ * `<script src="hydrate.js">` avoids the browser parsing and initialising the
+ * same script N times.
+ *
+ * @param {string} suspenseId     - The id of the fallback <div> to replace.
+ * @param {string} renderedContent - The real HTML to swap in.
  * @returns {string}
  */
 export function generateReplacementContent(suspenseId, renderedContent) {
   const contentId = `${suspenseId}-content`;
-  return `<template id="${contentId}">${renderedContent}</template><script src="/.app/client/services/hydrate.js" data-target="${suspenseId}" data-source="${contentId}"></script>`;
+  return `<template id="${contentId}">${renderedContent}</template><script>window.hydrateTarget("${suspenseId}","${contentId}")</script>`;
 }
 
 /**

@@ -9,6 +9,9 @@
   <link rel="stylesheet" href="/.app/client/styles.css">
   <script type="module" src="/.app/client/services/index.js"></script>
   <script src="/.app/client/services/hydrate-client-components.js"></script>
+  <!-- hydrate.js exposes a global window.hydrateTarget(targetId, sourceId) that
+       each Suspense replacement payload calls inline instead of loading the file again. -->
+  <script src="/.app/client/services/hydrate.js" id="hydrate-script"></script>
   {{clientScripts}}
 </head>
 

@@ -135,9 +135,15 @@ async function renderAndSendPage({
   const revalidateSeconds = getRevalidateSeconds(route.meta?.revalidate ?? 0);
   const isISR = revalidateSeconds !== 0;
 
+  // Normalise the cache key to pathname only
+  // `context.req.url` includes the query string (e.g. `/page?debug=true`).
+  // Using the full URL as a cache key means `/page` and `/page?debug=true`
+  // generate two separate cache entries for the same page content.
+  const isrCacheKey = new URL(context.req.url, "http://x").pathname;
+
   if(isISR) {
-    const { html: cachedHtml, isStale } = await getCachedComponentHtml({ 
-      componentPath: context.req.url, 
+    const { html: cachedHtml, isStale } = await getCachedComponentHtml({
+      componentPath: isrCacheKey,
       revalidateSeconds: revalidateSeconds,
     });
 
@@ -146,7 +152,7 @@ async function renderAndSendPage({
       return;
     }
   }
-  
+
   const { html, suspenseComponents, serverComponents } =
     await renderPageWithLayout(pagePath, context);
 
@@ -155,7 +161,7 @@ async function renderAndSendPage({
     sendResponse(context.res, statusCode, html);
 
     if(isISR) {
-      saveCachedComponentHtml({ componentPath: context.req.url, html });
+      saveCachedComponentHtml({ componentPath: isrCacheKey, html });
     }
     return;
   }
@@ -203,7 +209,7 @@ async function renderAndSendPage({
 
   if(isISR && !abortedStream && !errorStream) {
     saveCachedComponentHtml({
-      componentPath: context.req.url,
+      componentPath: isrCacheKey,
       html: htmlChunks.join("")
     });
   }
