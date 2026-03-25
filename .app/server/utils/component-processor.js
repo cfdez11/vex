@@ -26,8 +26,28 @@ import { getRevalidateSeconds } from "./cache.js";
 const processHtmlFileCache = new Map();
 
 /**
- * In dev only: watch pages/ and components/ for .html changes and evict the
- * corresponding cache entry so the next request picks up the new version.
+ * Root HTML shell read once at module load.
+ *
+ * `root.html` is a static wrapper (doctype, <head>, <body>) that never changes
+ * between requests. Reading it from disk on every SSR request is pure waste.
+ *
+ * Because this module is ESM, top-level `await` is valid and the read is
+ * completed before any request handler can call `renderLayouts`, so there is
+ * no race condition. Subsequent calls to `renderLayouts` use the already-resolved
+ * value with zero I/O.
+ *
+ * In production the value is kept for the lifetime of the process (files are
+ * immutable after deploy). In dev the watcher below refreshes it on save.
+ */
+let rootTemplate = await readFile(ROOT_HTML_DIR);
+
+/**
+ * In dev only: watch pages/, components/ and root.html for .html changes.
+ *
+ * - pages/ and components/: evicts the processHtmlFileCache entry for the
+ *   changed file so the next request re-parses it from disk.
+ * - root.html: re-reads the file and updates `rootTemplate` so the new shell
+ *   is used immediately without restarting the process.
  *
  * This watcher is intentionally skipped in production because:
  *  - files are immutable after deploy, so invalidation is never needed
@@ -43,6 +63,11 @@ if (process.env.NODE_ENV !== "production") {
       }
     });
   }
+
+  // root.html is a single file — watch it directly
+  watch(ROOT_HTML_DIR, async () => {
+    rootTemplate = await readFile(ROOT_HTML_DIR);
+  });
 }
 
 const DEFAULT_METADATA = {
@@ -452,8 +477,7 @@ async function renderLayouts(pagePath, pageContent, pageHead = {}) {
     }
   }
 
-  // wrap in root
-  const rootTemplate = await readFile(ROOT_HTML_DIR);
+  // wrap in root — rootTemplate is pre-loaded at module level (see PERF-02)
   currentContent = compileTemplateToHTML(rootTemplate, {
     ...pageHead,
     metadata: deepMetadata,
