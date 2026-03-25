@@ -1,0 +1,39 @@
+{
+  "name": "vexjs",
+  "displayName": "VexJS",
+  "description": "Syntax highlighting for VexJS framework — <script server>, <script client>, <template> with v-if, v-for, :prop, @event and {{ }} expressions.",
+  "version": "0.1.0",
+  "publisher": "Vexjs",
+  "engines": { "vscode": "^1.75.0" },
+  "categories": ["Programming Languages"],
+  "keywords": ["vexjs", "vex", "framework", "html", "template", "vue-like"],
+  "icon": "icon.png",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/REPLACE_WITH_YOUR_REPO"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "vexjs",
+        "aliases": ["VexJS", "vexjs"],
+        "extensions": [".vex"],
+        "filenamePatterns": ["**/pages/**/*.html", "**/components/**/*.html"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "vexjs",
+        "scopeName": "text.html.vexjs",
+        "path": "./syntaxes/vexjs.tmLanguage.json",
+        "embeddedLanguages": {
+          "source.js.server": "javascript",
+          "source.js.client": "javascript",
+          "source.js.expression": "javascript"
+        }
+      }
+    ]
+  }
+}

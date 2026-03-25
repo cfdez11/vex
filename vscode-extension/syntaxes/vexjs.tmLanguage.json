@@ -1,0 +1,216 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "VexJS",
+  "scopeName": "text.html.vexjs",
+  "fileTypes": [],
+  "patterns": [
+    { "include": "#server-script" },
+    { "include": "#client-script" },
+    { "include": "#template-block" }
+  ],
+  "repository": {
+
+    "server-script": {
+      "comment": "<script server> block — full JS IntelliSense via embeddedLanguages",
+      "name": "meta.block.server-script.vexjs",
+      "begin": "(<)(script)\\s+(server)(>)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.script.html" },
+        "3": { "name": "entity.other.attribute-name.vexjs storage.modifier.server.vexjs" },
+        "4": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "end": "(</)(script)(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.script.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "contentName": "source.js.server",
+      "patterns": [{ "include": "source.js" }]
+    },
+
+    "client-script": {
+      "comment": "<script client> block — full JS IntelliSense via embeddedLanguages",
+      "name": "meta.block.client-script.vexjs",
+      "begin": "(<)(script)\\s+(client)(>)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.script.html" },
+        "3": { "name": "entity.other.attribute-name.vexjs storage.modifier.client.vexjs" },
+        "4": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "end": "(</)(script)(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.script.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "contentName": "source.js.client",
+      "patterns": [{ "include": "source.js" }]
+    },
+
+    "template-block": {
+      "comment": "<template> block — HTML base + Vue-like directives + {{ }} expressions",
+      "name": "meta.block.template.vexjs",
+      "begin": "(<)(template)(>)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.template.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "end": "(</)(template)(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.template.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "patterns": [
+        { "include": "#template-interpolation" },
+        { "include": "#vexjs-tag-with-directives" },
+        { "include": "#html-comment" }
+      ]
+    },
+
+    "template-interpolation": {
+      "comment": "{{ expression }} — embedded JS expression",
+      "name": "meta.interpolation.vexjs",
+      "begin": "\\{\\{",
+      "beginCaptures": { "0": { "name": "punctuation.definition.interpolation.begin.vexjs" } },
+      "end": "\\}\\}",
+      "endCaptures": { "0": { "name": "punctuation.definition.interpolation.end.vexjs" } },
+      "contentName": "source.js.expression",
+      "patterns": [{ "include": "source.js" }]
+    },
+
+    "vexjs-tag-with-directives": {
+      "comment": "HTML opening tag — with support for :prop, @event and v-* directives",
+      "begin": "(<)([a-zA-Z][a-zA-Z0-9_-]*|[A-Z][a-zA-Z0-9_-]*)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" }
+      },
+      "end": "(/?>)",
+      "endCaptures": { "1": { "name": "punctuation.definition.tag.end.html" } },
+      "patterns": [
+        { "include": "#directive-v-for" },
+        { "include": "#directive-v-if-family" },
+        { "include": "#directive-v-show" },
+        { "include": "#directive-bind-shorthand" },
+        { "include": "#directive-on-shorthand" },
+        { "include": "#directive-v-bind-longhand" },
+        { "include": "#directive-v-on-longhand" },
+        { "include": "#directive-v-generic" },
+        { "include": "#html-attribute-string" },
+        { "include": "#html-attribute-bare" }
+      ]
+    },
+
+    "directive-v-for": {
+      "comment": "v-for=\"item in items\"",
+      "name": "meta.directive.v-for.vexjs",
+      "match": "\\b(v-for)=(\"[^\"]*\"|'[^']*')",
+      "captures": {
+        "1": { "name": "keyword.control.loop.vexjs" },
+        "2": { "name": "string.directive.vexjs" }
+      }
+    },
+
+    "directive-v-if-family": {
+      "comment": "v-if, v-else-if, v-else",
+      "name": "meta.directive.conditional.vexjs",
+      "match": "\\b(v-else-if|v-if|v-else)(?:=(\"[^\"]*\"|'[^']*'))?",
+      "captures": {
+        "1": { "name": "keyword.control.conditional.vexjs" },
+        "2": { "name": "string.directive.vexjs" }
+      }
+    },
+
+    "directive-v-show": {
+      "comment": "v-show=\"expr\"",
+      "name": "meta.directive.v-show.vexjs",
+      "match": "\\b(v-show)=(\"[^\"]*\"|'[^']*')",
+      "captures": {
+        "1": { "name": "keyword.control.visibility.vexjs" },
+        "2": { "name": "string.directive.vexjs" }
+      }
+    },
+
+    "directive-bind-shorthand": {
+      "comment": ":propName=\"expr\" — shorthand for v-bind",
+      "name": "meta.directive.bind.vexjs",
+      "match": "(:)([a-zA-Z][a-zA-Z0-9_-]*)=(\"[^\"]*\"|'[^']*')",
+      "captures": {
+        "1": { "name": "keyword.operator.bind.vexjs" },
+        "2": { "name": "entity.other.attribute-name.vexjs variable.other.prop.vexjs" },
+        "3": { "name": "string.directive.vexjs" }
+      }
+    },
+
+    "directive-on-shorthand": {
+      "comment": "@eventName=\"handler\" — shorthand for v-on",
+      "name": "meta.directive.on.vexjs",
+      "match": "(@)([a-zA-Z][a-zA-Z0-9_-]*)=(\"[^\"]*\"|'[^']*')",
+      "captures": {
+        "1": { "name": "keyword.operator.event.vexjs" },
+        "2": { "name": "entity.other.attribute-name.vexjs variable.other.event.vexjs" },
+        "3": { "name": "string.directive.vexjs" }
+      }
+    },
+
+    "directive-v-bind-longhand": {
+      "comment": "v-bind:propName=\"expr\"",
+      "name": "meta.directive.v-bind-long.vexjs",
+      "match": "(v-bind:)([a-zA-Z][a-zA-Z0-9_-]*)=(\"[^\"]*\"|'[^']*')",
+      "captures": {
+        "1": { "name": "keyword.operator.bind.vexjs" },
+        "2": { "name": "entity.other.attribute-name.vexjs variable.other.prop.vexjs" },
+        "3": { "name": "string.directive.vexjs" }
+      }
+    },
+
+    "directive-v-on-longhand": {
+      "comment": "v-on:eventName=\"handler\"",
+      "name": "meta.directive.v-on-long.vexjs",
+      "match": "(v-on:)([a-zA-Z][a-zA-Z0-9_-]*)=(\"[^\"]*\"|'[^']*')",
+      "captures": {
+        "1": { "name": "keyword.operator.event.vexjs" },
+        "2": { "name": "entity.other.attribute-name.vexjs variable.other.event.vexjs" },
+        "3": { "name": "string.directive.vexjs" }
+      }
+    },
+
+    "directive-v-generic": {
+      "comment": "Any other v-* directive not matched above",
+      "name": "meta.directive.generic.vexjs",
+      "match": "\\b(v-[a-zA-Z][a-zA-Z0-9_-]*)(?:=(\"[^\"]*\"|'[^']*'))?",
+      "captures": {
+        "1": { "name": "keyword.other.directive.vexjs" },
+        "2": { "name": "string.directive.vexjs" }
+      }
+    },
+
+    "html-attribute-string": {
+      "comment": "Standard HTML attribute with quoted value",
+      "match": "([a-zA-Z][a-zA-Z0-9_:-]*)\\s*=\\s*(\"[^\"]*\"|'[^']*')",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.html" },
+        "2": { "name": "string.quoted.html" }
+      }
+    },
+
+    "html-attribute-bare": {
+      "comment": "Boolean HTML attribute (no value)",
+      "match": "\\b([a-zA-Z][a-zA-Z0-9_-]*)\\b",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.html" }
+      }
+    },
+
+    "html-comment": {
+      "name": "comment.block.html",
+      "begin": "<!--",
+      "end": "-->"
+    }
+  }
+}
