@@ -1,4 +1,5 @@
 import fs from "fs/promises";
+import { watch } from "fs";
 import path from "path";
 import crypto from "crypto";
 import { fileURLToPath, pathToFileURL } from "url";
@@ -132,7 +133,32 @@ function getDirectoryName(filePath) {
  * @param {string} pagePath 
  * @returns {Promise<string[]>}
  */
-export async function getLayoutPaths(pagePath) {
+/**
+ *
+ * `getLayoutPaths` calls `fs.access` on every ancestor directory of `pagePath`
+ * to discover which `layout.html` files exist. The result is deterministic for
+ * a given page path — the filesystem structure does not change between requests.
+ *
+ * Key:   absolute page file path
+ * Value: array of absolute layout.html paths (innermost → outermost)
+ *
+ * In production entries live forever (deploy is immutable).
+ * In dev the watcher below clears the whole cache whenever any layout.html is
+ * created, modified, or deleted, so the next request re-discovers the correct set.
+ */
+const layoutPathsCache = new Map();
+
+if (process.env.NODE_ENV !== "production") {
+  // Watch the entire pages tree. When a layout.html changes, the set of layouts
+  // that exist may have changed — evict all cached entries to be safe.
+  watch(PAGES_DIR, { recursive: true }, (_, filename) => {
+    if (filename === "layout.html" || filename?.endsWith(`${path.sep}layout.html`)) {
+      layoutPathsCache.clear();
+    }
+  });
+}
+
+async function _getLayoutPaths(pagePath) {
   const layouts = [];
   const relativePath = getRelativePath(PAGES_DIR, pagePath);
   const pathSegments = getDirectoryName(relativePath).split(path.sep);
@@ -157,6 +183,22 @@ export async function getLayoutPaths(pagePath) {
   }
   
   return layouts;
+}
+
+/**
+ * Cached wrapper around `_getLayoutPaths`.
+ *
+ * Returns the cached layout list on repeated calls for the same page, avoiding
+ * repeated `fs.access` probes on every SSR request.
+ *
+ * @param {string} pagePath - Absolute path to the page file.
+ * @returns {Promise<string[]>}
+ */
+export async function getLayoutPaths(pagePath) {
+  if (layoutPathsCache.has(pagePath)) return layoutPathsCache.get(pagePath);
+  const result = await _getLayoutPaths(pagePath);
+  layoutPathsCache.set(pagePath, result);
+  return result;
 }
 
 /**
