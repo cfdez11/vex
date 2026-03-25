@@ -58,9 +58,23 @@ function parseAttributes(rawAttrs) {
  * @param {Map<string, { path: string }>} serverComponents
  * @returns {Promise<string>}
  */
+/**
+ * Renders server component instances in parallel.
+ *
+ * Each component type found in `serverComponents` may appear multiple times in
+ * the HTML (e.g. three `<UserCard>` tags). Previously they were rendered one by
+ * one in a serial `for` loop, even though each instance is fully independent.
+ *
+ * Now, all instances of a given component are kicked off at the same time with
+ * `Promise.all` and their results are applied in reverse-index order so that
+ * string offsets stay valid (replacing from the end of the string backwards).
+ *
+ * @param {string} html
+ * @param {Map<string, { path: string }>} serverComponents
+ * @returns {Promise<string>}
+ */
 async function processServerComponents(html, serverComponents) {
   let processedHtml = html;
-  const allMatches = [];
 
   for (const [componentName, componentData] of serverComponents.entries()) {
     const escapedName = componentName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -73,28 +87,28 @@ async function processServerComponents(html, serverComponents) {
     let match;
 
     while ((match = componentRegex.exec(html)) !== null) {
-      const matchData = {
+      replacements.push({
         name: componentName,
         attrs: parseAttributes(match[1]),
         fullMatch: match[0],
         start: match.index,
         end: match.index + match[0].length,
-      };
-
-      replacements.push(matchData);
-      allMatches.push(matchData);
+      });
     }
 
-    // Render in reverse order to maintain indices
+    if (replacements.length === 0) continue;
+
+    // Render all instances of this component concurrently, then apply results
+    // from the end of the string backwards so earlier offsets stay valid.
+    const rendered = await Promise.all(
+      replacements.map(({ attrs }) => renderHtmlFile(componentData.path, attrs))
+    );
+
     for (let i = replacements.length - 1; i >= 0; i--) {
-      const { start, end, attrs } = replacements[i];
-      const { html: htmlComponent } = await renderHtmlFile(
-        componentData.path,
-        attrs
-      );
+      const { start, end } = replacements[i];
       processedHtml =
         processedHtml.slice(0, start) +
-        htmlComponent +
+        rendered[i].html +
         processedHtml.slice(end);
     }
   }
