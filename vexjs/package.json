@@ -7,7 +7,14 @@
   "exports": {
     ".": "./server/index.js"
   },
-  "keywords": ["framework", "ssr", "ssg", "reactive", "file-based-routing"],
+  "files": [
+    "server",
+    "client"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["framework", "ssr", "ssg", "reactive", "file-based-routing", "express", "vanilla-js"],
   "license": "MIT",
   "dependencies": {
     "dom-serializer": "^2.0.0",
