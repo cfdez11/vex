@@ -1,5 +1,5 @@
 {
-  "version": "0.3.0",
+  "version": "0.4.0",
   "name": "vexjs",
   "displayName": "VexJS",
   "description": "Syntax highlighting for VexJS framework — <script server>, <script client>, <template> with x-if, x-for, :prop, @event and {{ }} expressions.",
@@ -34,6 +34,14 @@
           "source.js.expression": "javascript"
         }
       }
-    ]
+    ],
+    "configurationDefaults": {
+      "material-icon-theme.files.associations": {
+        "*.vex": "html"
+      },
+      "material-icon-theme.languages.associations": {
+        "vexjs": "html"
+      }
+    }
   }
 }
