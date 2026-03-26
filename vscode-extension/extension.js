@@ -2,7 +2,8 @@ const vscode = require("vscode");
 const path = require("path");
 const fs = require("fs");
 
-const IMPORT_REGEX = /from\s+['"]([^'"]+)['"]/g;
+// Group 1: default import name (optional), Group 2: import path
+const IMPORT_REGEX = /import\s+(\w+)\s+from\s+['"]([^'"]+)['"]/g;
 
 function findProjectRoot(startDir) {
   let dir = startDir;
@@ -53,21 +54,63 @@ function tryExtensions(filePath) {
 
 /** @param {vscode.ExtensionContext} context */
 function activate(context) {
-  const provider = vscode.languages.registerDefinitionProvider("vexjs", {
+  // DocumentLinkProvider: makes the entire import string a clickable link
+  const linkProvider = vscode.languages.registerDocumentLinkProvider("vexjs", {
+    provideDocumentLinks(document) {
+      const links = [];
+
+      for (let i = 0; i < document.lineCount; i++) {
+        const line = document.lineAt(i).text;
+        IMPORT_REGEX.lastIndex = 0;
+        let match;
+
+        while ((match = IMPORT_REGEX.exec(line)) !== null) {
+          const [, importName, importPath] = match;
+          const currentFileDir = path.dirname(document.fileName);
+          const projectRoot = findProjectRoot(currentFileDir);
+          const resolved = resolveImportPath(importPath, currentFileDir, projectRoot);
+          const finalPath = tryExtensions(resolved);
+
+          if (!finalPath) continue;
+
+          const target = vscode.Uri.file(finalPath);
+
+          // Link on the imported name (e.g. Weather)
+          const nameStart = line.indexOf(importName, match.index);
+          links.push(new vscode.DocumentLink(
+            new vscode.Range(i, nameStart, i, nameStart + importName.length),
+            target
+          ));
+
+          // Link on the path string
+          const pathStart = line.indexOf(importPath, match.index);
+          links.push(new vscode.DocumentLink(
+            new vscode.Range(i, pathStart, i, pathStart + importPath.length),
+            target
+          ));
+        }
+      }
+
+      return links;
+    },
+  });
+
+  // DefinitionProvider: F12 / "Go to Definition" support
+  const definitionProvider = vscode.languages.registerDefinitionProvider("vexjs", {
     provideDefinition(document, position) {
       const line = document.lineAt(position).text;
-      let match;
       IMPORT_REGEX.lastIndex = 0;
+      let match;
 
       while ((match = IMPORT_REGEX.exec(line)) !== null) {
-        const importPath = match[1];
-        const start = line.indexOf(importPath, match.index);
-        const range = new vscode.Range(
-          position.line, start,
-          position.line, start + importPath.length
-        );
+        const [, importName, importPath] = match;
 
-        if (!range.contains(position)) continue;
+        const nameStart = line.indexOf(importName, match.index);
+        const nameRange = new vscode.Range(position.line, nameStart, position.line, nameStart + importName.length);
+        const pathStart = line.indexOf(importPath, match.index);
+        const pathRange = new vscode.Range(position.line, pathStart, position.line, pathStart + importPath.length);
+
+        if (!nameRange.contains(position) && !pathRange.contains(position)) continue;
 
         const currentFileDir = path.dirname(document.fileName);
         const projectRoot = findProjectRoot(currentFileDir);
@@ -75,16 +118,13 @@ function activate(context) {
         const finalPath = tryExtensions(resolved);
 
         if (finalPath) {
-          return new vscode.Location(
-            vscode.Uri.file(finalPath),
-            new vscode.Position(0, 0)
-          );
+          return new vscode.Location(vscode.Uri.file(finalPath), new vscode.Position(0, 0));
         }
       }
     },
   });
 
-  context.subscriptions.push(provider);
+  context.subscriptions.push(linkProvider, definitionProvider);
 }
 
 function deactivate() {}
