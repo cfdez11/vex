@@ -15,12 +15,12 @@
  * 4. Property/Boolean bindings (:prop):
  *    html`<button :disabled="${isDisabled}">Send</button>`
  * 
- * 5. Conditional rendering (v-if, v-else-if, v-else):
- *    html`<div v-if="${condition}">Show if true</div>`
- *    html`<div v-else>Show if false</div>`
- * 
- * 6. Loop rendering (v-for):
- *    html`<li v-for="${item => items}">Item: ${item}</li>`
+ * 5. Conditional rendering (x-if, x-else-if, x-else):
+ *    html`<div x-if="${condition}">Show if true</div>`
+ *    html`<div x-else>Show if false</div>`
+ *
+ * 6. Loop rendering (x-for):
+ *    html`<li x-for="${item => items}">Item: ${item}</li>`
  * 
  * 7. Nested templates and arrays:
  *    html`<div>${items.map(item => html`<li>${item}</li>`)}</div>`
@@ -51,7 +51,7 @@ export function html(strings, ...values) {
   // Clone content to avoid mutating the template
   const fragment = template.content.cloneNode(true);
 
-  // Process Vue-like directives (v-if, v-else-if, v-else, v-for)
+  // Process VexJS directives (x-if, x-else-if, x-else, x-for)
   processDirectives(fragment, markers, values);
 
   // Determine single root element or return a fragment
@@ -68,7 +68,7 @@ export function html(strings, ...values) {
 
 /**
  * Recursively processes directives on a node and its children.
- * Supports v-if, v-else-if, v-else, and v-for.
+ * Supports x-if, x-else-if, x-else, and x-for.
  *
  * @param {Node} node - The DOM node or fragment to process.
  * @param {string[]} markers - Unique markers for interpolated values.
@@ -83,13 +83,13 @@ function processDirectives(node, markers, values) {
     const child = children[i];
 
     if (child.nodeType === Node.ELEMENT_NODE) {
-      if (child.hasAttribute('v-if')) {
+      if (child.hasAttribute('x-if')) {
         // skip all processed nodes in the conditional chain
         i = handleConditionalChain(node, children, i, markers, values);
         continue;
       }
 
-      if (child.hasAttribute('v-for')) {
+      if (child.hasAttribute('x-for')) {
         handleVFor(child, markers, values);
         continue;
       }
@@ -100,7 +100,7 @@ function processDirectives(node, markers, values) {
 }
 
 /**
- * Processes v-if, v-else-if, and v-else chains.
+ * Processes x-if, x-else-if, and x-else chains.
  * Keeps the first element whose condition is truthy.
  *
  * @param {Node} parent - Parent node of the conditional chain.
@@ -122,22 +122,22 @@ function handleConditionalChain(parent, children, startIndex, markers, values) {
       continue;
     }
 
-    if (element.hasAttribute('v-if')) {
-      chain.push({ 
-        element, 
-        type: 'if', 
-        condition: element.getAttribute('v-if'),
+    if (element.hasAttribute('x-if')) {
+      chain.push({
+        element,
+        type: 'if',
+        condition: element.getAttribute('x-if'),
       });
       currentIndex++;
-    } else if (element.hasAttribute('v-else-if')) {
+    } else if (element.hasAttribute('x-else-if')) {
       if (!chain.length) break;
-      chain.push({ 
-        element, 
-        type: 'else-if', 
-        condition: element.getAttribute('v-else-if'),
+      chain.push({
+        element,
+        type: 'else-if',
+        condition: element.getAttribute('x-else-if'),
       });
       currentIndex++;
-    } else if (element.hasAttribute('v-else')) {
+    } else if (element.hasAttribute('x-else')) {
       if (!chain.length) break;
       chain.push({ 
         element, 
@@ -159,13 +159,13 @@ function handleConditionalChain(parent, children, startIndex, markers, values) {
 
     if (item.type === 'else') {
       kept = item.element;
-      item.element.removeAttribute('v-else');
+      item.element.removeAttribute('x-else');
     } else {
       const markerIndex = markers.findIndex(m => item.condition.includes(m));
       const condition = markerIndex !== -1 ? values[markerIndex] : false;
       if (condition) {
         kept = item.element;
-        item.element.removeAttribute(item.type === 'if' ? 'v-if' : 'v-else-if');
+        item.element.removeAttribute(item.type === 'if' ? 'x-if' : 'x-else-if');
       } else {
         item.element.remove();
       }
@@ -176,25 +176,25 @@ function handleConditionalChain(parent, children, startIndex, markers, values) {
 }
 
 /**
- * Handles v-for directives to render lists.
+ * Handles x-for directives to render lists.
  * Clones the template element for each item in the array.
  *
- * @param {HTMLElement} element - Template element with v-for attribute.
+ * @param {HTMLElement} element - Template element with x-for attribute.
  * @param {string[]} markers - Unique markers for interpolation.
  * @param {any[]} values - Interpolated values (must include array for v-for).
  */
 function handleVFor(element, markers, values) {
-  const vForValue = element.getAttribute('v-for');
+  const vForValue = element.getAttribute('x-for');
   const markerIndex = markers.findIndex(m => vForValue.includes(m));
   if (markerIndex === -1 || !Array.isArray(values[markerIndex])) {
-    element.removeAttribute('v-for');
+    element.removeAttribute('x-for');
     return;
   }
 
   const items = values[markerIndex];
   const parent = element.parentNode;
   const template = element.cloneNode(true);
-  template.removeAttribute('v-for');
+  template.removeAttribute('x-for');
 
   const fragment = document.createDocumentFragment();
   for (const item of items) {
@@ -352,12 +352,12 @@ function processAttributes(element, markers, values) {
       element.removeAttribute(attr.name);
     }
 
-    // v-show directive
-    if (attr.name === "v-show") {
+    // x-show directive
+    if (attr.name === "x-show") {
       const idx = markers.findIndex((m) => attr.value.includes(m));
       const value = idx !== -1 ? values[idx] : false;
       element.style.display = value ? "" : "none";
-      element.removeAttribute("v-show");
+      element.removeAttribute("x-show");
       continue;
     }
 

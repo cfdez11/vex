@@ -33,7 +33,7 @@ import { loadRouteComponent } from './cache.js';
         
         return { hydrateClientComponent: mod.hydrateClientComponent, metadata: mod.metadata };
       },
-      layouts: [{"name":"_layout_2c9170dc","importPath":"/.app/client/_components/_layout_2c9170dc.js"}],
+      layouts: [{"name":"_layout_f70c9cf2","importPath":"/.app/client/_components/_layout_f70c9cf2.js"}],
       meta: {
         ssr: false,
         requiresAuth: false,
@@ -46,7 +46,7 @@ import { loadRouteComponent } from './cache.js';
         
         return { hydrateClientComponent: mod.hydrateClientComponent, metadata: mod.metadata };
       },
-      layouts: [{"name":"_layout_2c9170dc","importPath":"/.app/client/_components/_layout_2c9170dc.js"}],
+      layouts: [{"name":"_layout_f70c9cf2","importPath":"/.app/client/_components/_layout_f70c9cf2.js"}],
       meta: {
         ssr: false,
         requiresAuth: false,
@@ -59,7 +59,7 @@ import { loadRouteComponent } from './cache.js';
         
         return { hydrateClientComponent: mod.hydrateClientComponent, metadata: mod.metadata };
       },
-      layouts: [{"name":"_layout_2c9170dc","importPath":"/.app/client/_components/_layout_2c9170dc.js"}],
+      layouts: [{"name":"_layout_f70c9cf2","importPath":"/.app/client/_components/_layout_f70c9cf2.js"}],
       meta: {
         ssr: false,
         requiresAuth: false,
@@ -93,7 +93,7 @@ import { loadRouteComponent } from './cache.js';
         
         return { hydrateClientComponent: mod.hydrateClientComponent, metadata: mod.metadata };
       },
-      layouts: [{"name":"_layout_2c9170dc","importPath":"/.app/client/_components/_layout_2c9170dc.js"},{"name":"_static_layout_b5e4107f","importPath":"/.app/client/_components/_static_layout_b5e4107f.js"}],
+      layouts: [{"name":"_layout_f70c9cf2","importPath":"/.app/client/_components/_layout_f70c9cf2.js"},{"name":"_static_layout_a509cc36","importPath":"/.app/client/_components/_static_layout_a509cc36.js"}],
       meta: {
         ssr: false,
         requiresAuth: false,
@@ -106,7 +106,7 @@ import { loadRouteComponent } from './cache.js';
         
         return { hydrateClientComponent: mod.hydrateClientComponent, metadata: mod.metadata };
       },
-      layouts: [{"name":"_layout_2c9170dc","importPath":"/.app/client/_components/_layout_2c9170dc.js"}],
+      layouts: [{"name":"_layout_f70c9cf2","importPath":"/.app/client/_components/_layout_f70c9cf2.js"}],
       meta: {
         ssr: false,
         requiresAuth: false,

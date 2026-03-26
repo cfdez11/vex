@@ -83,7 +83,7 @@ if (process.env.NODE_ENV !== "production") {
   const watchDirs = [PAGES_DIR, path.join(path.dirname(PAGES_DIR), "components")];
   for (const dir of watchDirs) {
     watch(dir, { recursive: true }, async (_, filename) => {
-      if (filename?.endsWith(".html")) {
+      if (filename?.endsWith(".vex")) {
         const fullPath = path.join(dir, filename);
 
         // 1. Evict all in-memory caches for this file
@@ -159,7 +159,7 @@ const getScriptImports = async (script, isClientSide = false) => {
 
     const { path, fileUrl } = await getImportData(modulePath);
 
-    if (path.endsWith(".html")) {
+    if (path.endsWith(".vex")) {
       // Recursively process HTML component
       if (defaultImport) {
         componentRegistry.set(defaultImport, {
@@ -423,7 +423,7 @@ function generateClientScriptTags({
 
   const clientCodeWithoutComponentImports = clientCode
     .split("\n")
-    .filter((line) => !/^\s*import\s+.*['"].*\.html['"]/.test(line))
+    .filter((line) => !/^\s*import\s+.*['"].*\.vex['"]/.test(line))
     .join("\n")
     .trim();
 
@@ -641,9 +641,9 @@ function convertVueToHtmlTagged(template, clientCode = "") {
 
   let result = template.trim();
 
-  // v-for="item in items" → ${items.value.map(item => html`...`)}
+  // x-for="item in items" → ${items.value.map(item => html`...`)}
   result = result.replace(
-    /<(\w+)([^>]*)\s+v-for="(\w+)\s+in\s+([^"]+)(?:\.value)?"([^>]*)>([\s\S]*?)<\/\1>/g,
+    /<(\w+)([^>]*)\s+x-for="(\w+)\s+in\s+([^"]+)(?:\.value)?"([^>]*)>([\s\S]*?)<\/\1>/g,
     (_, tag, beforeAttrs, iterVar, arrayVar, afterAttrs, content) => {
       const cleanExpr = arrayVar.trim();
       const isSimpleVar = /^\w+$/.test(cleanExpr);
@@ -654,9 +654,9 @@ function convertVueToHtmlTagged(template, clientCode = "") {
     }
   );
 
-  // v-show="condition" → v-show="${condition.value}" (add .value for reactive vars)
-  result = result.replace(/v-show="([^"]+)"/g, (_, condition) => {
-    return `v-show="\${${processExpression(condition)}}"`;
+  // x-show="condition" → x-show="${condition.value}" (add .value for reactive vars)
+  result = result.replace(/x-show="([^"]+)"/g, (_, condition) => {
+    return `x-show="\${${processExpression(condition)}}"`;
   });
 
   // {{variable}} → ${variable.value} (for reactive vars)
@@ -683,11 +683,11 @@ function convertVueToHtmlTagged(template, clientCode = "") {
     return `:${attr}='\${${processExpression(value)}}'`;
   });
 
-  // v-if="condition" → v-if="${condition}"
-  result = result.replace(/v-if="([^"]*)"/g, 'v-if="${$1}"');
+  // x-if="condition" → x-if="${condition}"
+  result = result.replace(/x-if="([^"]*)"/g, 'x-if="${$1}"');
 
-  // v-else-if="condition" → v-else-if="${condition}"
-  result = result.replace(/v-else-if="([^"]*)"/g, 'v-else-if="${$1}"');
+  // x-else-if="condition" → x-else-if="${condition}"
+  result = result.replace(/x-else-if="([^"]*)"/g, 'x-else-if="${$1}"');
 
   return result;
 }
@@ -795,14 +795,14 @@ export async function generateClientComponentModule({
   clientComponents,
 }) {
 
-  // Extract default props from vprops
+  // Extract default props from xprops
   const defaults = extractVPropsDefaults(clientCode);
 
   const clientCodeWithProps = addComputedProps(clientCode, defaults);
 
-  // Remove vprops declaration and imports from client code
+  // Remove xprops declaration and imports from client code
   const cleanClientCode = clientCodeWithProps
-    .replace(/const\s+props\s*=\s*vprops\s*\([\s\S]*?\)\s*;?/g, "")
+    .replace(/const\s+props\s*=\s*xprops\s*\([\s\S]*?\)\s*;?/g, "")
     .replace(/^\s*import\s+.*$/gm, "")
     .trim();
 
@@ -978,29 +978,29 @@ export async function processClientComponent(componentName, originalPath, props 
 }
 
 /**
- * Extract vprops object literal from client code
+ * Extract xprops object literal from client code
  * @param {string} clientCode
  * @returns {string | null}
  */
 function extractVPropsObject(clientCode) {
-  const match = clientCode.match(/vprops\s*\(\s*(\{[\s\S]*?\})\s*\)/);
+  const match = clientCode.match(/xprops\s*\(\s*(\{[\s\S]*?\})\s*\)/);
   return match ? match[1] : null;
 }
 
 /**
- * Extract default values from vprops definition
+ * Extract default values from xprops definition
  * @param {string} clientCode
  * @returns {object} Object with prop names and their default values
  */
 function extractVPropsDefaults(clientCode) {
-  const vpropsLiteral = extractVPropsObject(clientCode);
-  if (!vpropsLiteral) return {};
+  const xpropsLiteral = extractVPropsObject(clientCode);
+  if (!xpropsLiteral) return {};
 
-  const vpropsDef = safeObjectEval(vpropsLiteral);
+  const xpropsDef = safeObjectEval(xpropsLiteral);
   const defaults = {};
 
-  for (const key in vpropsDef) {
-    const def = vpropsDef[key];
+  for (const key in xpropsDef) {
+    const def = xpropsDef[key];
     if (def && typeof def === "object" && "default" in def) {
       defaults[key] = def.default;
     }
@@ -1020,15 +1020,15 @@ function safeObjectEval(objectLiteral) {
 }
 
 /**
- * Applies default props from vprops definition
- * @param {object} vpropsDef
+ * Applies default props from xprops definition
+ * @param {object} xpropsDef
  * @param {object} componentProps
  * @returns {object}
  */
-function applyDefaultProps(vpropsDefined, componentProps) {
+function applyDefaultProps(xpropsDefined, componentProps) {
   const finalProps = {};
-  for (const key in vpropsDefined) {
-    const def = vpropsDefined[key];
+  for (const key in xpropsDefined) {
+    const def = xpropsDefined[key];
     if (key in componentProps) {
       finalProps[key] = componentProps[key];
     } else if ("default" in def) {
@@ -1047,31 +1047,31 @@ function applyDefaultProps(vpropsDefined, componentProps) {
  * @param {object} componentProps
  */
 function computeProps(clientCode, componentProps) {
-  const vpropsLiteral = extractVPropsObject(clientCode);
+  const xpropsLiteral = extractVPropsObject(clientCode);
 
-  if (!vpropsLiteral) return componentProps;
+  if (!xpropsLiteral) return componentProps;
 
-  const vpropsDefined = safeObjectEval(vpropsLiteral);
+  const xpropsDefined = safeObjectEval(xpropsLiteral);
 
-  return applyDefaultProps(vpropsDefined, componentProps);
+  return applyDefaultProps(xpropsDefined, componentProps);
 }
 
 /**
  * Adds computed props to client code if are defined.
- * Replaces vprops(...) by const props = { ... };
+ * Replaces xprops(...) by const props = { ... };
  * @param {string} clientCode
  * @param {object} componentProps
  * 
  * @returns {string}
  */
 function addComputedProps(clientCode, componentProps) {
-  const vpropsRegex = /const\s+props\s*=\s*vprops\s*\([\s\S]*?\)\s*;?/;
-  if (!vpropsRegex.test(clientCode)) return clientCode;
+  const xpropsRegex = /const\s+props\s*=\s*xprops\s*\([\s\S]*?\)\s*;?/;
+  if (!xpropsRegex.test(clientCode)) return clientCode;
 
   const computedProps = computeProps(clientCode, componentProps);
 
   return clientCode.replace(
-    vpropsRegex,
+    xpropsRegex,
     `const props = { ...${JSON.stringify(computedProps)}, ...incomingProps };`
   );
 }

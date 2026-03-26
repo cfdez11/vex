@@ -94,40 +94,40 @@ function processNode(node, scope, previousRendered = false) {
       }
     }
 
-    if ("v-if" in attrs) {
-      const show = getDataValue(attrs["v-if"], scope);
-      delete attrs["v-if"];
+    if ("x-if" in attrs) {
+      const show = getDataValue(attrs["x-if"], scope);
+      delete attrs["x-if"];
       if (!show) return null;
     }
 
-    if ("v-else-if" in attrs) {
-      const show = getDataValue(attrs["v-else-if"], scope);
-      delete attrs["v-else-if"];
+    if ("x-else-if" in attrs) {
+      const show = getDataValue(attrs["x-else-if"], scope);
+      delete attrs["x-else-if"];
       if (previousRendered || !show) return null;
     }
 
-    if ("v-else" in attrs) {
-      delete attrs["v-else"];
+    if ("x-else" in attrs) {
+      delete attrs["x-else"];
       if (previousRendered) {
         return null;
       }
     }
 
-    if ("v-show" in attrs) {
-      const show = getDataValue(attrs["v-show"], scope);
-      delete attrs["v-show"];
+    if ("x-show" in attrs) {
+      const show = getDataValue(attrs["x-show"], scope);
+      delete attrs["x-show"];
       if (!show) {
         attrs.style = (attrs.style || "") + "display:none;";
       }
     }
 
-    if ("v-for" in attrs) {
-      const exp = attrs["v-for"];
-      delete attrs["v-for"];
+    if ("x-for" in attrs) {
+      const exp = attrs["x-for"];
+      delete attrs["x-for"];
 
       // format: item in items
       const match = exp.match(/(.+?)\s+in\s+(.+)/);
-      if (!match) throw new Error("Invalid v-for format: " + exp);
+      if (!match) throw new Error("Invalid x-for format: " + exp);
 
       const itemName = match[1].trim();
       const listExpr = match[2].trim();
@@ -157,7 +157,7 @@ function processNode(node, scope, previousRendered = false) {
         delete attrs[name];
       }
 
-      if (name.startsWith("v-bind:")) {
+      if (name.startsWith("x-bind:")) {
         const realName = name.slice(7);
         attrs[realName] = String(getDataValue(value, scope));
         delete attrs[name];
@@ -165,7 +165,7 @@ function processNode(node, scope, previousRendered = false) {
     }
 
     for (const [name] of Object.entries({ ...attrs })) {
-      if (name.startsWith("@") || name.startsWith("v-on:")) {
+      if (name.startsWith("@") || name.startsWith("x-on:")) {
         delete attrs[name];
       }
     }

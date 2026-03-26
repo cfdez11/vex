@@ -58,7 +58,7 @@ Every `.html` component has three optional sections:
 </script>
 
 <template>
-  <!-- Vue-like template syntax: {{expr}}, v-if, v-for, v-show, :prop, @event -->
+  <!-- VexJS template syntax: {{expr}}, x-if, x-for, x-show, :prop, @event -->
   <h1>{{title}}</h1>
   <button @click="count.value++">{{count.value}}</button>
 </template>
@@ -68,15 +68,15 @@ Every `.html` component has three optional sections:
 - `getData({ req, props })` — async function; its return value is merged into the template scope
 - `metadata` — plain object (or `getMetadata({ req, props })` async function) with page-level config
 - `getStaticPaths()` — async function returning `[{ params: {...} }]` for pre-rendering dynamic routes
-- `@event` handlers and `v-on:` attributes are stripped server-side; they only work in the client script
+- `@event` handlers and `x-on:` attributes are stripped server-side; they only work in the client script
 
-**Component props (`vprops`):**
+**Component props (`xprops`):**
 
-Components that accept props from parents declare them with `vprops()`:
+Components that accept props from parents declare them with `xprops()`:
 
 ```javascript
 // Inside <script server> or <script client>
-const props = vprops({
+const props = xprops({
   userId: { default: null },
   start: { default: 10 },
 });
@@ -152,4 +152,4 @@ The layout (`pages/layout.html`) persists across navigations; only the page cont
 
 ### Template Expression Scope
 
-Template expressions (`{{expr}}`, `v-if`, `:prop`, etc.) are evaluated against the object returned by `getData()` merged with `metadata`. Expressions support property access (`user.name`), array indexing (`items[0]`), and method calls (`name.toUpperCase()`). Complex logic should go in `getData` rather than inline expressions — ternaries and filters are not supported.
+Template expressions (`{{expr}}`, `x-if`, `:prop`, etc.) are evaluated against the object returned by `getData()` merged with `metadata`. Expressions support property access (`user.name`), array indexing (`items[0]`), and method calls (`name.toUpperCase()`). Complex logic should go in `getData` rather than inline expressions — ternaries and filters are not supported.

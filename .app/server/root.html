@@ -14,7 +14,7 @@
   <script src="/.app/client/services/hydrate.js" id="hydrate-script"></script>
   <!-- HMR client: connects to /.app/hmr SSE endpoint and reloads on file changes.
        Only injected in dev mode (devMode = NODE_ENV !== 'production'). -->
-  <script v-if="devMode" src="/.app/client/services/hmr-client.js"></script>
+  <script x-if="devMode" src="/.app/client/services/hmr-client.js"></script>
   {{clientScripts}}
 </head>
 
