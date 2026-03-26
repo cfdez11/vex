@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
   "name": "vexjs",
   "displayName": "VexJS",
   "description": "Syntax highlighting for VexJS framework — <script server>, <script client>, <template> with x-if, x-for, :prop, @event and {{ }} expressions.",

@@ -67,9 +67,20 @@
       },
       "patterns": [
         { "include": "#template-interpolation" },
+        { "include": "#html-close-tag" },
         { "include": "#vexjs-tag-with-directives" },
         { "include": "#html-comment" }
       ]
+    },
+
+    "html-close-tag": {
+      "comment": "Closing tag — </div>, </MyComponent>, etc.",
+      "match": "(</)([a-zA-Z][a-zA-Z0-9_-]*)(>)",
+      "captures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      }
     },
 
     "template-interpolation": {
