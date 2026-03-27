@@ -12,7 +12,7 @@
     "start": "vex start"
   },
   "dependencies": {
-    "vexjs": "workspace:*"
+    "@cfdez11/vex": "workspace:*"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
