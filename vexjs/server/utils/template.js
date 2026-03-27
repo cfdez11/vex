@@ -77,9 +77,12 @@ function parseHTMLToNodes(html) {
  */
 function processNode(node, scope, previousRendered = false) {
   if (node.type === "text") {
-    node.data = node.data.replace(/\{\{(.+?)\}\}/g, (_, expr) =>
-      getDataValue(expr.trim(), scope)
-    );
+    // Replace {{expr}} with its value from scope (SSR interpolation).
+    // The lookbehind (?<!\\) skips escaped \{{expr}}, which are then
+    // unescaped to literal {{expr}} by the second replace.
+    node.data = node.data
+      .replace(/(?<!\\)\{\{(.+?)\}\}/g, (_, expr) => getDataValue(expr.trim(), scope))
+      .replace(/\\\{\{/g, "{{");
     return node;
   }
 
@@ -88,9 +91,9 @@ function processNode(node, scope, previousRendered = false) {
 
     for (const [attrName, attrValue] of Object.entries(attrs)) {
       if (typeof attrValue === "string") {
-        attrs[attrName] = attrValue.replace(/\{\{(.+?)\}\}/g, (_, expr) =>
-          getDataValue(expr.trim(), scope)
-        );
+        attrs[attrName] = attrValue
+          .replace(/(?<!\\)\{\{(.+?)\}\}/g, (_, expr) => getDataValue(expr.trim(), scope))
+          .replace(/\\\{\{/g, "{{");
       }
     }
 
