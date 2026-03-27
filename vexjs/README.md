@@ -686,6 +686,12 @@ sequenceDiagram
 - [x] `vex.config.json` — configurable `srcDir` and `watchIgnore`
 - [x] Published to npm as `@cfdez11/vex`
 - [x] VS Code extension with syntax highlighting and go-to-definition
+- [ ] Devtools
+- [ ] Typescript in framework
+- [ ] Allow typescript to devs
+- [ ] Improve extension (hightlight, redirects, etc)
+- [ ] Create theme syntax
+- [ ] Create docs page
 - [ ] Authentication middleware
 - [ ] CDN cache integration
 - [ ] Fix Suspense marker replacement with multi-root templates
