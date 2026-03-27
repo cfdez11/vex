@@ -1,8 +1,9 @@
+import fs from "fs/promises";
 import express from "express";
 import path from "path";
 import { pathToFileURL } from "url";
 import { handlePageRequest, revalidatePath } from "./utils/router.js";
-import { initializeDirectories, CLIENT_DIR } from "./utils/files.js";
+import { initializeDirectories, CLIENT_DIR, SRC_DIR } from "./utils/files.js";
 
 await initializeDirectories();
 
@@ -62,6 +63,49 @@ app.use(
     },
   })
 );
+
+// Serve user JS utility files at /_vexjs/user/* with import rewriting
+app.get("/_vexjs/user/*splat", async (req, res) => {
+  const splat = req.params.splat;
+  const relPath = Array.isArray(splat) ? splat.join("/") : splat;
+  const filePath = path.resolve(path.join(SRC_DIR, relPath));
+  // Prevent path traversal outside SRC_DIR
+  if (!filePath.startsWith(SRC_DIR + path.sep) && filePath !== SRC_DIR) {
+    return res.status(403).send("Forbidden");
+  }
+  try {
+    let content = await fs.readFile(filePath, "utf-8");
+    // Rewrite imports to browser-accessible paths
+    content = content.replace(
+      /^(\s*import\s+[^'"]*from\s+)['"]([^'"]+)['"]/gm,
+      (match, prefix, modulePath) => {
+        if (modulePath.startsWith("vex/") || modulePath.startsWith(".app/")) {
+          let mod = modulePath.replace(/^vex\//, "").replace(/^\.app\//, "");
+          if (!path.extname(mod)) mod += ".js";
+          return `${prefix}'/_vexjs/services/${mod}'`;
+        }
+        if (modulePath.startsWith("@/") || modulePath === "@") {
+          let resolved = path.resolve(SRC_DIR, modulePath.replace(/^@\//, "").replace(/^@$/, ""));
+          if (!path.extname(resolved)) resolved += ".js";
+          const rel = path.relative(SRC_DIR, resolved).replace(/\\/g, "/");
+          return `${prefix}'/_vexjs/user/${rel}'`;
+        }
+        if (modulePath.startsWith("./") || modulePath.startsWith("../")) {
+          const fileDir = path.dirname(filePath);
+          let resolved = path.resolve(fileDir, modulePath);
+          if (!path.extname(resolved)) resolved += ".js";
+          const rel = path.relative(SRC_DIR, resolved).replace(/\\/g, "/");
+          return `${prefix}'/_vexjs/user/${rel}'`;
+        }
+        return match;
+      }
+    );
+    res.setHeader("Content-Type", "application/javascript");
+    res.send(content);
+  } catch {
+    res.status(404).send("Not found");
+  }
+});
 
 // Serve user's public directory at /
 app.use("/", express.static(path.join(process.cwd(), "public")));
