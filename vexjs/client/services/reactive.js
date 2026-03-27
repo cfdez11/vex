@@ -89,6 +89,14 @@ export function reactive(obj) {
     get(target, prop) {
       // Handle primitive value conversion (for template literals, etc.)
       if (target.__isPrimitive && prop === Symbol.toPrimitive) {
+        // Track "value" dependency so effects using ${counter} re-run on change
+        if (activeEffect) {
+          if (!depsMap.has("value")) depsMap.set("value", new Set());
+          const depSet = depsMap.get("value");
+          depSet.add(activeEffect);
+          if (!activeEffect.deps) activeEffect.deps = [];
+          activeEffect.deps.push(depSet);
+        }
         return () => target.value;
       }
 
@@ -180,11 +188,19 @@ export function computed(getter) {
     value = getter();
   });
 
-  return {
-    get value() {
-      return value;
+  return new Proxy({}, {
+    get(_, prop) {
+      if (prop === Symbol.toPrimitive) {
+        return () => value;
+      }
+      if (prop === "value") {
+        return value;
+      }
+      // Delegate any other access (e.g. .map, .length) to the underlying value
+      const v = value?.[prop];
+      return typeof v === "function" ? v.bind(value) : v;
     },
-  };
+  });
 }
 
 /**
