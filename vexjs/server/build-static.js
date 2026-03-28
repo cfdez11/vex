@@ -38,6 +38,7 @@ let shell = rootTemplate
   .replace(/\{\{props\.children\}\}/g, "");
 
 const frameworkScripts = [
+  `<style>vex-root { display: contents; }</style>`,
   `<script type="module" src="/_vexjs/services/index.js"></script>`,
   `<script src="/_vexjs/services/hydrate-client-components.js"></script>`,
   `<script src="/_vexjs/services/hydrate.js" id="hydrate-script"></script>`,

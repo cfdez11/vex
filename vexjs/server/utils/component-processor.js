@@ -564,6 +564,7 @@ async function renderLayouts(pagePath, pageContent, pageHead = {}) {
   // so users don't need to reference framework scripts in their root.html
   const devMode = process.env.NODE_ENV !== "production";
   const frameworkScripts = [
+    `<style>vex-root { display: contents; }</style>`,
     `<script type="module" src="/_vexjs/services/index.js"></script>`,
     `<script src="/_vexjs/services/hydrate-client-components.js"></script>`,
     `<script src="/_vexjs/services/hydrate.js" id="hydrate-script"></script>`,
@@ -832,6 +833,11 @@ export async function generateClientComponentModule({
   // ── 5. Assemble the esbuild entry source ────────────────────────────────────
   // This is a valid ESM module that esbuild will bundle. Imports at the top,
   // hydrateClientComponent exported as a named function.
+  // Add persistent wrapper element anchors the component in the DOM so that
+  // re-renders always have a stable target to replace children into.
+  // Using a plain Element (never a DocumentFragment) avoids the fragment-drain
+  // problem: after marker.replaceWith(fragment) the fragment empties and
+  // disconnects, making subsequent root.replaceWith() calls silently no-op.
   const entrySource = `
 ${[...importLines].join("\n")}
 
@@ -840,20 +846,16 @@ export const metadata = ${JSON.stringify(metadata)};
 export function hydrateClientComponent(marker, incomingProps = {}) {
   ${cleanClientCode}
 
-  let root = null;
+  const wrapper = document.createElement("vex-root");
+  marker.replaceWith(wrapper);
+
   function render() {
     const node = html\`${processedHtml}\`;
-    if (!root) {
-      root = node;
-      marker.replaceWith(node);
-    } else {
-      root.replaceWith(node);
-      root = node;
-    }
+    wrapper.replaceChildren(node);
   }
 
   effect(() => render());
-  return root;
+  return wrapper;
 }
 `.trim();
 
