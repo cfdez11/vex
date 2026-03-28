@@ -1,8 +1,9 @@
 import { watch } from "fs";
+import fs from "fs/promises";
 import path from "path";
 import esbuild from "esbuild";
 import { compileTemplateToHTML } from "./template.js";
-import { getOriginalRoutePath, getPageFiles, getRoutePath, saveClientComponentModule, saveClientRoutesFile, saveComponentHtmlDisk, saveServerRoutesFile, readFile, getImportData, generateComponentId, adjustClientModulePath, PAGES_DIR, ROOT_HTML_DIR, getLayoutPaths, SRC_DIR, WATCH_IGNORE, WATCH_IGNORE_FILES, CLIENT_COMPONENTS_DIR } from "./files.js";
+import { getOriginalRoutePath, getPageFiles, getRoutePath, saveClientComponentModule, saveClientRoutesFile, saveComponentHtmlDisk, saveServerRoutesFile, readFile, getImportData, generateComponentId, adjustClientModulePath, PAGES_DIR, ROOT_HTML_DIR, getLayoutPaths, SRC_DIR, WATCH_IGNORE, WATCH_IGNORE_FILES, CLIENT_COMPONENTS_DIR, USER_GENERATED_DIR } from "./files.js";
 import { renderComponents } from "./streaming.js";
 import { getRevalidateSeconds } from "./cache.js";
 import { withCache } from "./data-cache.js";
@@ -109,15 +110,12 @@ if (process.env.NODE_ENV !== "production") {
         // 3. Notify connected browsers to reload
         hmrEmitter.emit("reload", filename);
       } else if (filename.endsWith(".js")) {
-        // User utility .js file changed. Because esbuild inlines user files into
-        // each component bundle that imports them, a change to any utility requires
-        // re-bundling all components — we cannot know which bundles include this
-        // file without tracking the full import graph. Rebuilding all components
-        // is fast enough with esbuild (sub-millisecond per file).
+        // Rebuild the changed user JS file so npm imports are re-bundled.
+        const fullPath = path.join(SRC_DIR, filename);
         try {
-          await generateComponentsAndFillCache();
+          await buildUserFile(fullPath);
         } catch (e) {
-          console.error(`[HMR] Rebuild failed after ${filename} change:`, e.message);
+          console.error(`[HMR] Failed to rebuild user file ${filename}:`, e.message);
         }
         hmrEmitter.emit("reload", filename);
       }
@@ -1558,6 +1556,59 @@ export async function generateRoutes() {
 }
 
 /**
+ * Bundles a single user JS file with esbuild so npm bare-specifier imports
+ * are resolved and inlined, while vex/*, @/*, and relative user imports stay
+ * external (singletons served at /_vexjs/user/*).
+ *
+ * Output is written to USER_GENERATED_DIR preserving the SRC_DIR-relative path.
+ *
+ * @param {string} filePath - Absolute path to the user .js file.
+ */
+async function buildUserFile(filePath) {
+  const rel = path.relative(SRC_DIR, filePath).replace(/\\/g, "/");
+  const outfile = path.join(USER_GENERATED_DIR, rel);
+  await esbuild.build({
+    entryPoints: [filePath],
+    bundle: true,
+    format: "esm",
+    outfile,
+    plugins: [createVexAliasPlugin()],
+  });
+}
+
+/**
+ * Recursively finds all .js files in SRC_DIR (excluding WATCH_IGNORE dirs)
+ * and prebundles each one via buildUserFile.
+ *
+ * Called during build() so that user utility files are ready before the server
+ * starts serving /_vexjs/user/* from the pre-built static output.
+ */
+async function buildUserFiles() {
+  const collect = async (dir) => {
+    let entries;
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    await Promise.all(entries.map(async (entry) => {
+      if (WATCH_IGNORE.has(entry.name)) return;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await collect(full);
+      } else if (entry.name.endsWith(".js")) {
+        try {
+          await buildUserFile(full);
+        } catch (e) {
+          console.error(`[build] Failed to bundle user file ${full}:`, e.message);
+        }
+      }
+    }));
+  };
+  await collect(SRC_DIR);
+}
+
+/**
  * Single-pass build entry point.
  *
  * Previously `prebuild.js` and `index.js` called `generateComponentsAndFillCache`
@@ -1573,5 +1624,6 @@ export async function generateRoutes() {
  */
 export async function build() {
   await generateComponentsAndFillCache();
+  await buildUserFiles();
   return generateRoutes();
 }

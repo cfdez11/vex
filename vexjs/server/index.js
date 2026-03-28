@@ -3,7 +3,7 @@ import express from "express";
 import path from "path";
 import { pathToFileURL } from "url";
 import { handlePageRequest, revalidatePath } from "./utils/router.js";
-import { initializeDirectories, CLIENT_DIR } from "./utils/files.js";
+import { initializeDirectories, CLIENT_DIR, USER_GENERATED_DIR } from "./utils/files.js";
 
 await initializeDirectories();
 
@@ -71,6 +71,22 @@ app.use(
   })
 );
 
+
+// Serve pre-bundled user JS utility files at /_vexjs/user/
+// These are @/ and relative imports in <script client> blocks. esbuild bundles
+// each file with npm packages inlined; vex/*, @/*, and relative user imports
+// stay external so every component shares the same singleton module instance
+// via the browser's ES module cache.
+app.use(
+  "/_vexjs/user",
+  express.static(USER_GENERATED_DIR, {
+    setHeaders(res, filePath) {
+      if (filePath.endsWith(".js")) {
+        res.setHeader("Content-Type", "application/javascript");
+      }
+    },
+  })
+);
 
 // Serve user's public directory at /
 app.use("/", express.static(path.join(process.cwd(), "public")));

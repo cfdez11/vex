@@ -5,11 +5,10 @@ import { build } from "./utils/component-processor.js";
 import {
   initializeDirectories,
   CLIENT_DIR,
-  SRC_DIR,
   PROJECT_ROOT,
   getRootTemplate,
-  WATCH_IGNORE,
   generateComponentId,
+  USER_GENERATED_DIR,
 } from "./utils/files.js";
 
 const GENERATED_DIR = path.join(PROJECT_ROOT, ".vexjs");
@@ -68,9 +67,15 @@ await fs.cp(
   { recursive: true }
 );
 
-// Step 7: Copy user JS files with import rewriting → dist/_vexjs/user/
-console.log("📦 Processing user JS files...");
-await copyUserJsFiles(SRC_DIR, path.join(DIST_DIR, "_vexjs", "user"));
+// Step 7: Copy pre-bundled user JS files → dist/_vexjs/user/
+// build() already ran esbuild on every user .js file → USER_GENERATED_DIR.
+// npm packages are bundled inline; vex/*, @/*, relative imports stay external.
+console.log("📦 Copying pre-bundled user JS files...");
+try {
+  await fs.cp(USER_GENERATED_DIR, path.join(DIST_DIR, "_vexjs", "user"), { recursive: true });
+} catch {
+  // no user JS files — that's fine
+}
 
 // Step 8: Copy public/ → dist/ (static assets, CSS)
 console.log("📦 Copying public assets...");
@@ -117,87 +122,4 @@ console.log("✅ Static build complete! Output: dist/");
 console.log("\nTo serve locally:  npx serve dist");
 console.log("Static host note:  configure your host to serve dist/index.html for all 404s (SPA fallback).");
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/**
- * Recursively walks SRC_DIR, rewrites imports in every .js file,
- * and writes results to destDir preserving the relative path structure.
- *
- * Skips directories listed in WATCH_IGNORE (node_modules, dist, .vexjs, etc.).
- *
- * @param {string} srcDir  Absolute path to user source root (SRC_DIR)
- * @param {string} destDir Absolute path to dist/_vexjs/user/
- */
-async function copyUserJsFiles(srcDir, destDir) {
-  let entries;
-  try {
-    entries = await fs.readdir(srcDir, { withFileTypes: true });
-  } catch {
-    return;
-  }
-
-  for (const entry of entries) {
-    if (WATCH_IGNORE.has(entry.name)) continue;
-
-    const fullSrc = path.join(srcDir, entry.name);
-    const relToSrcDir = path.relative(SRC_DIR, fullSrc).replace(/\\/g, "/");
-    const fullDest = path.join(destDir, relToSrcDir);
-
-    if (entry.isDirectory()) {
-      await copyUserJsFiles(fullSrc, destDir);
-    } else if (entry.name.endsWith(".js")) {
-      let content;
-      try {
-        content = await fs.readFile(fullSrc, "utf-8");
-      } catch {
-        continue;
-      }
-
-      content = rewriteUserImports(content, fullSrc, srcDir);
-
-      await fs.mkdir(path.dirname(fullDest), { recursive: true });
-      await fs.writeFile(fullDest, content, "utf-8");
-    }
-  }
-}
-
-/**
- * Rewrites import paths in a user JS file so they work in the browser.
- * Mirrors the runtime rewriting done by the /_vexjs/user/* Express handler.
- *
- * - `vex/` and `.app/` → `/_vexjs/services/`
- * - `@/` (project alias) → `/_vexjs/user/`
- * - relative `./` or `../` → `/_vexjs/user/`
- * - external bare specifiers (e.g. npm packages) → left as-is
- *
- * @param {string} content  File source
- * @param {string} filePath Absolute path of the file being rewritten
- * @param {string} srcDir   Absolute SRC_DIR root
- * @returns {string} Rewritten source
- */
-function rewriteUserImports(content, filePath, srcDir) {
-  return content.replace(
-    /^(\s*import\s+[^'"]*from\s+)['"]([^'"]+)['"]/gm,
-    (match, prefix, modulePath) => {
-      if (modulePath.startsWith("vex/") || modulePath.startsWith(".app/")) {
-        let mod = modulePath.replace(/^vex\//, "").replace(/^\.app\//, "");
-        if (!path.extname(mod)) mod += ".js";
-        return `${prefix}'/_vexjs/services/${mod}'`;
-      }
-      if (modulePath.startsWith("@/") || modulePath === "@") {
-        let resolved = path.resolve(srcDir, modulePath.replace(/^@\//, "").replace(/^@$/, ""));
-        if (!path.extname(resolved)) resolved += ".js";
-        const rel = path.relative(srcDir, resolved).replace(/\\/g, "/");
-        return `${prefix}'/_vexjs/user/${rel}'`;
-      }
-      if (modulePath.startsWith("./") || modulePath.startsWith("../")) {
-        const fileDir = path.dirname(filePath);
-        let resolved = path.resolve(fileDir, modulePath);
-        if (!path.extname(resolved)) resolved += ".js";
-        const rel = path.relative(srcDir, resolved).replace(/\\/g, "/");
-        return `${prefix}'/_vexjs/user/${rel}'`;
-      }
-      return match;
-    }
-  );
-}

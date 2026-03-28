@@ -111,6 +111,7 @@ export const CLIENT_SERVICES_DIR = path.join(CLIENT_DIR, "services");
 const GENERATED_DIR = path.join(PROJECT_ROOT, ".vexjs");
 const CACHE_DIR = path.join(GENERATED_DIR, "_cache");
 export const CLIENT_COMPONENTS_DIR = path.join(GENERATED_DIR, "_components");
+export const USER_GENERATED_DIR = path.join(GENERATED_DIR, "user");
 const SERVER_UTILS_DIR = path.join(GENERATED_DIR);
 const ROOT_HTML_USER = path.join(PROJECT_ROOT, "root.html");
 const ROOT_HTML_DEFAULT = path.join(FRAMEWORK_DIR, "server", "root.html");
@@ -137,6 +138,7 @@ export async function initializeDirectories() {
       fs.mkdir(GENERATED_DIR, { recursive: true }),
       fs.mkdir(CACHE_DIR, { recursive: true }),
       fs.mkdir(CLIENT_COMPONENTS_DIR, { recursive: true }),
+      fs.mkdir(USER_GENERATED_DIR, { recursive: true }),
       fs.mkdir(path.join(GENERATED_DIR, "services"), { recursive: true }),
     ]);
 
@@ -165,12 +167,10 @@ export async function initializeDirectories() {
  *
  * @example
  * const result = adjustClientModulePath(
- *   '.app/reactive.js',
- *   "import userController from '.app/reactive.js';"
+ *   'vex/reactive',
+ *   "import { reactive } from 'vex/reactive';"
  * );
- * console.log(result.path); // '/.app/client/services/reactive.js'
- * console.log(result.importStatement); 
- * // "import userController from '/.app/client/services/reactive.js';"
+ * console.log(result.path); // '/_vexjs/services/reactive.js'
  */
 export function adjustClientModulePath(modulePath, importStatement, componentFilePath = null) {
   if (modulePath.startsWith("/_vexjs/")) {
@@ -204,8 +204,8 @@ export function adjustClientModulePath(modulePath, importStatement, componentFil
     return { path: adjustedPath, importStatement: adjustedImportStatement };
   }
 
-  // Framework imports (vex/ and .app/)
-  let relative = modulePath.replace(/^vex\//, "").replace(/^\.app\//, "");
+  // Framework imports (vex/)
+  let relative = modulePath.replace(/^vex\//, "");
   let adjustedPath = `/_vexjs/services/${relative}`;
 
   // Auto-resolve directory → index.js, bare name → .js
@@ -817,10 +817,8 @@ export async function getImportData(importPath, callerFilePath = null) {
     resolvedPath = path.resolve(FRAMEWORK_DIR, importPath.replace("vex/server/", "server/"));
   } else if (importPath.startsWith("vex/")) {
     resolvedPath = path.resolve(FRAMEWORK_DIR, "client/services", importPath.replace("vex/", ""));
-  } else if (importPath.startsWith(".app/server/")) {
-    resolvedPath = path.resolve(FRAMEWORK_DIR, importPath.replace(".app/server/", "server/"));
-  } else if (importPath.startsWith(".app/")) {
-    resolvedPath = path.resolve(FRAMEWORK_DIR, importPath.replace(".app/", ""));
+  } else if (importPath.startsWith("@/") || importPath === "@") {
+    resolvedPath = path.resolve(SRC_DIR, importPath.replace(/^@\//, "").replace(/^@$/, ""));
   } else if ((importPath.startsWith("./") || importPath.startsWith("../")) && callerFilePath) {
     // Relative import — resolve against the caller component's directory, not ROOT_DIR.
     // Without this, `import Foo from './foo.vex'` inside a nested component would be
@@ -838,3 +836,4 @@ export async function getImportData(importPath, callerFilePath = null) {
   const fileUrl = pathToFileURL(resolvedPath).href;
   return { path: resolvedPath, fileUrl, importPath };
 }
+
