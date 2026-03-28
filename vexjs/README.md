@@ -128,7 +128,7 @@ Optional file at the project root.
 ```html
 <!-- pages/example/page.vex -->
 <script server>
-  import UserCard from "components/user-card.vex";
+  import UserCard from "@/components/user-card.vex";
 
   const metadata = { title: "My Page", description: "Page description" };
 
@@ -138,7 +138,7 @@ Optional file at the project root.
 </script>
 
 <script client>
-  import Counter from "components/counter.vex";
+  import Counter from "@/components/counter.vex";
 </script>
 
 <template>
@@ -204,11 +204,11 @@ Import them in any page or component:
 
 ```html
 <script server>
-  import UserCard from "components/user-card.vex";
+  import UserCard from "@/components/user-card.vex";
 </script>
 
 <script client>
-  import Counter from "components/counter.vex";
+  import Counter from "@/components/counter.vex";
 </script>
 
 <template>
@@ -361,8 +361,8 @@ Streams a fallback immediately while a slow component loads:
 
 ```html
 <script server>
-  import SlowCard   from "components/slow-card.vex";
-  import SkeletonCard from "components/skeleton-card.vex";
+  import SlowCard     from "@/components/slow-card.vex";
+  import SkeletonCard from "@/components/skeleton-card.vex";
 </script>
 
 <template>
@@ -553,12 +553,23 @@ Reference the stylesheet in `root.html`:
 
 ## 🔧 Framework API
 
-### Imports
+### Import conventions
 
-| Import | Context | Description |
-|--------|---------|-------------|
-| `vex/reactive` | `<script client>` | Reactivity engine (`reactive`, `computed`, `effect`, `watch`) |
-| `vex/navigation` | `<script client>` | Router utilities (`useRouteParams`, `useQueryParams`) |
+| Pattern | Example | Behaviour |
+|---------|---------|-----------|
+| `vex/*` | `import { reactive } from "vex/reactive"` | Framework singleton — shared instance across all components |
+| `@/*` | `import store from "@/utils/store.js"` | Project alias for your source root — also a singleton |
+| `./` / `../` | `import { fn } from "./helpers.js"` | Relative user file — also a singleton |
+| npm bare specifier | `import { format } from "date-fns"` | Bundled inline by esbuild |
+
+All user JS files (`@/` and relative) are pre-bundled at startup: npm packages are inlined, while `vex/*`, `@/*`, and relative imports stay external. The browser's ES module cache guarantees every import of the same file returns the same instance — enabling shared reactive state across components without a dedicated store library.
+
+### Client script imports
+
+| Import | Description |
+|--------|-------------|
+| `vex/reactive` | Reactivity engine (`reactive`, `computed`, `effect`, `watch`) |
+| `vex/navigation` | Router utilities (`useRouteParams`, `useQueryParams`) |
 
 ### Server script hooks
 
