@@ -12,10 +12,63 @@ This repository contains the VexJS framework and related packages.
 
 ## Getting Started
 
+### Monorepo (development)
+
 ```bash
 pnpm install
 pnpm --filter demo dev
 ```
+
+### New project (from npm)
+
+Install the package:
+
+```bash
+npm install @cfdez11/vex
+```
+
+Then set up your `package.json`. The `vex` CLI handles all framework commands (`dev`, `build`, `build:static`, `start`). CSS tooling (e.g. Tailwind) is added separately:
+
+```json
+{
+  "name": "my-app",
+  "type": "module",
+  "scripts": {
+    "dev": "run-p dev:server dev:css",
+    "dev:server": "vex dev",
+    "dev:css": "npx @tailwindcss/cli -i ./src/input.css -o ./public/styles.css --watch",
+    "build": "vex build",
+    "build:static": "vex build:static",
+    "build:css": "npx @tailwindcss/cli -i ./src/input.css -o ./public/styles.css --minify",
+    "start": "vex start"
+  },
+  "dependencies": {
+    "@cfdez11/vex": "^0.6.0"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "tailwindcss": "^4.0.0"
+  }
+}
+```
+
+> CSS is optional — if you're not using Tailwind, replace `dev` with just `"vex dev"` and remove the css scripts.
+
+Copy `.env.example` to `.env` and set your environment variables:
+
+```bash
+# .env
+VEX_PORT=3001         # port for the dev/prod server (default: 3001)
+```
+
+#### Available CLI commands
+
+| Command | Description |
+|---|---|
+| `vex dev` | Start the development server with HMR |
+| `vex build` | Prebuild: generate component bundles and route files |
+| `vex build:static` | Full static build → `dist/` folder (deployable to any static host) |
+| `vex start` | Start the production server (requires `vex build` first) |
 
 ---
 
