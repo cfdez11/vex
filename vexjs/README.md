@@ -697,6 +697,11 @@ sequenceDiagram
 - [x] `vex.config.json` — configurable `srcDir` and `watchIgnore`
 - [x] Published to npm as `@cfdez11/vex`
 - [x] VS Code extension with syntax highlighting and go-to-definition
+- [ ] Refactor client component prop pipeline: evaluate `:props` expressions directly in `streaming.js` with the page scope instead of going through `template.js` → `String()` → `JSON.stringify` → `JSON.parse`. Eliminates the unnecessary serialization round-trip for array/object props.
+- [ ] esbuild minification: enable `minify: true` in `generateClientBundle` and `buildUserFile` for production builds. Zero-cost win — esbuild is already in the pipeline.
+- [ ] esbuild source maps: enable `sourcemap: "inline"` in dev mode so browser devtools show original source instead of the bundle.
+- [ ] esbuild browser target: add `target: ["es2020"]` (or configurable) to transpile modern syntax for broader browser compatibility.
+- [ ] esbuild code splitting: shared npm packages (e.g. `date-fns`) are currently inlined into every component bundle separately. Code splitting would emit a shared chunk, reducing total download size when multiple components share the same dependency.
 - [ ] Devtools
 - [ ] Typescript in framework
 - [ ] Allow typescript to devs
