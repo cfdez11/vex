@@ -56,9 +56,7 @@
       markers = container.querySelectorAll(
         "[data-client\\:component]:not([data-hydrated='true'])"
       );
-      for (const marker of markers) {
-        await hydrateMarker(marker, props);
-      }
+      await Promise.all([...markers].map((marker) => hydrateMarker(marker, props)));
     } while (markers.length > 0);
   }
 
