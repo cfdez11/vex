@@ -1,14 +1,12 @@
-import { effect } from '/_vexjs/services/reactive.js';
-import { html } from '/_vexjs/services/html.js';  
-
-    export const metadata = {"title":"404 - Page not found | Vanilla JS","description":"The page you are looking for does not exist."}
-    
-    export function hydrateClientComponent(marker, incomingProps = {}) {
-      
-      
-      let root = null;
-      function render() {
-        const node = html`<div class="flex items-center justify-center min-h-[60vh]">
+// <stdin>
+import { effect } from "/_vexjs/services/reactive.js";
+import { html } from "/_vexjs/services/html.js";
+var metadata = { "title": "404 - Page not found | Vanilla JS", "description": "The page you are looking for does not exist." };
+function hydrateClientComponent(marker, incomingProps = {}) {
+  const wrapper = document.createElement("vex-root");
+  marker.replaceWith(wrapper);
+  function render() {
+    const node = html`<div class="flex items-center justify-center min-h-[60vh]">
     <div class="max-w-md w-full space-y-8 text-center">
       <div class="mx-auto">
         <div class="text-9xl font-extrabold text-blue-600 animate-pulse">
@@ -60,16 +58,12 @@ import { html } from '/_vexjs/services/html.js';
       </div>
     </div>
   </div>`;
-        if (!root) {
-          root = node;
-          marker.replaceWith(node);
-        } else {
-          root.replaceWith(node);
-          root = node;
-        }
-      }
-
-      effect(() => render());
-
-      return root;
-    }
+    wrapper.replaceChildren(node);
+  }
+  effect(() => render());
+  return wrapper;
+}
+export {
+  hydrateClientComponent,
+  metadata
+};

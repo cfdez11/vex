@@ -1,15 +1,13 @@
-import { effect } from '/_vexjs/services/reactive.js';
-import { html } from '/_vexjs/services/html.js';  
-
-    export const metadata = null
-    
-    export function hydrateClientComponent(marker, incomingProps = {}) {
-      /** @type {{ children: node }} */
-  const props = { ...{"children":null}, ...incomingProps };
-      
-      let root = null;
-      function render() {
-        const node = html`<div>
+// <stdin>
+import { effect } from "/_vexjs/services/reactive.js";
+import { html } from "/_vexjs/services/html.js";
+var metadata = null;
+function hydrateClientComponent(marker, incomingProps = {}) {
+  const props = { ...{ "children": null }, ...incomingProps };
+  const wrapper = document.createElement("vex-root");
+  marker.replaceWith(wrapper);
+  function render() {
+    const node = html`<div>
 
     <header class="bg-white shadow-lg border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -22,7 +20,7 @@ import { html } from '/_vexjs/services/html.js';
           </h1>
 
           <nav class="hidden md:flex items-center gap-8">
-            <template id="client-NavCounter-1774617543733" data-client:component="_components_nav_counter_5ac9e880" data-client:props='{}'></template>
+            <template id="client-NavCounter-1774706734481" data-client:component="_components_nav_counter_5ac9e880" data-client:props='{}'></template>
             <ul class="flex space-x-8 items-center">
               <li>
                 <a class="text-gray-600 hover:text-blue-600 font-medium transition-colors duration-200 border-b-2 border-transparent hover:border-blue-600 pb-1"
@@ -96,16 +94,12 @@ import { html } from '/_vexjs/services/html.js';
       </div>
     </footer>
   </div>`;
-        if (!root) {
-          root = node;
-          marker.replaceWith(node);
-        } else {
-          root.replaceWith(node);
-          root = node;
-        }
-      }
-
-      effect(() => render());
-
-      return root;
-    }
+    wrapper.replaceChildren(node);
+  }
+  effect(() => render());
+  return wrapper;
+}
+export {
+  hydrateClientComponent,
+  metadata
+};

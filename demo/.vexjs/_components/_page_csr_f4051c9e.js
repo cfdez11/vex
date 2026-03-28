@@ -1,21 +1,20 @@
-import { effect } from '/_vexjs/services/reactive.js';
-import { html } from '/_vexjs/services/html.js';  
-
-    export const metadata = {"title":"Page CSR","description":"CSR page fetching data in client-side using a client component"}
-    
-    export function hydrateClientComponent(marker, incomingProps = {}) {
-      const links = [
-    { href: '/page-csr/madrid', label: 'Madrid' },
-    { href: '/page-csr/barcelona', label: 'Barcelona' },
-    { href: '/page-csr/londres', label: 'Londres' },
-    { href: '/page-csr/nuevayork', label: 'Nueva York' },
-    { href: '/page-csr/paris', label: 'París' },
-    { href: '/page-csr/tokio', label: 'Tokio' },
+// <stdin>
+import { effect } from "/_vexjs/services/reactive.js";
+import { html } from "/_vexjs/services/html.js";
+var metadata = { "title": "Page CSR", "description": "CSR page fetching data in client-side using a client component" };
+function hydrateClientComponent(marker, incomingProps = {}) {
+  const links = [
+    { href: "/page-csr/madrid", label: "Madrid" },
+    { href: "/page-csr/barcelona", label: "Barcelona" },
+    { href: "/page-csr/londres", label: "Londres" },
+    { href: "/page-csr/nuevayork", label: "Nueva York" },
+    { href: "/page-csr/paris", label: "Par\xEDs" },
+    { href: "/page-csr/tokio", label: "Tokio" }
   ];
-      
-      let root = null;
-      function render() {
-        const node = html`<div class="max-w-6xl mx-auto px-4 py-8">
+  const wrapper = document.createElement("vex-root");
+  marker.replaceWith(wrapper);
+  function render() {
+    const node = html`<div class="max-w-6xl mx-auto px-4 py-8">
     <header class="mb-12 text-center">
       <div class="inline-block bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-semibold mb-4">
         ⚡ Client-Side Rendering (CSR)
@@ -32,19 +31,15 @@ import { html } from '/_vexjs/services/html.js';
         </p>
       </div>
     </header>
-    <template id="client-Weather-1774617543734" data-client:component="_components_weather_weather_state_5886c775" data-client:props='{}'></template>
-    <template id="client-WeatherLinks-1774617543734" data-client:component="_components_weather_weather_links_376a02a5" data-client:props='{"links":"${links}"}'></template>
+    <template id="client-Weather-1774706734482" data-client:component="_components_weather_weather_state_5886c775" data-client:props='{}'></template>
+    <template id="client-WeatherLinks-1774706734482" data-client:component="_components_weather_weather_links_376a02a5" data-client:props='${JSON.stringify({ "links": links })}'></template>
   </div>`;
-        if (!root) {
-          root = node;
-          marker.replaceWith(node);
-        } else {
-          root.replaceWith(node);
-          root = node;
-        }
-      }
-
-      effect(() => render());
-
-      return root;
-    }
+    wrapper.replaceChildren(node);
+  }
+  effect(() => render());
+  return wrapper;
+}
+export {
+  hydrateClientComponent,
+  metadata
+};
