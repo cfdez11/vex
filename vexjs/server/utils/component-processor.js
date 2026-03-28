@@ -867,6 +867,7 @@ export function hydrateClientComponent(marker, incomingProps = {}) {
   // the framework's internal directories.
   const outfile = path.join(CLIENT_COMPONENTS_DIR, `${componentName}.js`);
 
+  const isProd = process.env.NODE_ENV === "production";
   await esbuild.build({
     stdin: {
       contents: entrySource,
@@ -877,6 +878,7 @@ export function hydrateClientComponent(marker, incomingProps = {}) {
     format: "esm",
     platform: "browser",
     plugins: [createVexAliasPlugin()],
+    minify: isProd,
     // Silence esbuild's default stdout logging — the framework has its own output
     logLevel: "silent",
   });
@@ -1575,6 +1577,7 @@ async function buildUserFile(filePath) {
     format: "esm",
     outfile,
     plugins: [createVexAliasPlugin()],
+    minify: process.env.NODE_ENV === "production",
   });
 }
 

@@ -3,6 +3,7 @@ import { watch, existsSync, statSync, readFileSync } from "fs";
 import path from "path";
 import crypto from "crypto";
 import { fileURLToPath, pathToFileURL } from "url";
+import esbuild from "esbuild";
 
 /**
  * Absolute path of the current file.
@@ -131,6 +132,44 @@ export const ROOT_HTML_DIR = ROOT_HTML_USER;
  * @returns {Promise<boolean|undefined>}
  * Resolves `true` when directories are created successfully.
  */
+async function minifyServicesDir(src, dest) {
+  const jsFiles = [];
+  const otherFiles = [];
+
+  const collect = async (srcDir, destDir) => {
+    const entries = await fs.readdir(srcDir, { withFileTypes: true });
+    await Promise.all(entries.map(async (entry) => {
+      const srcPath = path.join(srcDir, entry.name);
+      const destPath = path.join(destDir, entry.name);
+      if (entry.isDirectory()) {
+        await fs.mkdir(destPath, { recursive: true });
+        await collect(srcPath, destPath);
+      } else if (entry.name.endsWith(".js")) {
+        jsFiles.push({ in: srcPath, out: destPath });
+      } else {
+        otherFiles.push({ src: srcPath, dest: destPath });
+      }
+    }));
+  };
+
+  await collect(src, dest);
+
+  await Promise.all([
+    esbuild.build({
+      entryPoints: jsFiles.map(f => f.in),
+      bundle: false,
+      format: "esm",
+      platform: "browser",
+      minify: true,
+      legalComments: "none",
+      outdir: dest,
+      outbase: src,
+      logLevel: "silent",
+    }),
+    ...otherFiles.map(f => fs.copyFile(f.src, f.dest)),
+  ]);
+}
+
 export async function initializeDirectories() {
   try {
     const servicesDir = path.join(GENERATED_DIR, "services");
@@ -142,11 +181,16 @@ export async function initializeDirectories() {
       fs.mkdir(servicesDir, { recursive: true }),
     ]);
 
-    // Copy framework client runtime files into .vexjs/services/ so they are
-    // served by the /_vexjs/services static route alongside generated files
-    // like _routes.js. Generated files (prefixed with _) are written later by
-    // the build step and overwrite any stale copies here.
-    await fs.cp(CLIENT_SERVICES_DIR, servicesDir, { recursive: true });
+    // Copy (or minify in production) framework client runtime files into
+    // .vexjs/services/ so they are served by the /_vexjs/services static route
+    // alongside generated files like _routes.js.
+    // Generated files (prefixed with _) are written later by the build step
+    // and overwrite any stale copies here.
+    if (process.env.NODE_ENV === "production") {
+      await minifyServicesDir(CLIENT_SERVICES_DIR, servicesDir);
+    } else {
+      await fs.cp(CLIENT_SERVICES_DIR, servicesDir, { recursive: true });
+    }
 
     return true;
   } catch (err) {
