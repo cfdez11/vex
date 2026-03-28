@@ -177,7 +177,7 @@ const getScriptImports = async (script, isClientSide = false, filePath = null) =
   while ((match = importRegex.exec(script)) !== null) {
     const [importStatement, defaultImport, namedImports, modulePath] = match;
 
-    const { path, fileUrl } = await getImportData(modulePath);
+    const { path, fileUrl } = await getImportData(modulePath, filePath);
 
     if (path.endsWith(".vex")) {
       // Recursively process HTML component
@@ -989,7 +989,7 @@ async function generateServerComponentHTML(componentPath) {
  * and runtime interpolations (e.g., `${variable}`).
  *
  * @param {string} componentName - The logical name of the component.
- * @param {string} originalPath - The original file path of the component.
+ * @param {string} componentAbsPath - The absolute file path of the component (resolved by getImportData).
  * @param {Record<string, any>} [props={}] - An object of props to pass to the component.
  *                                            Values can be literals or template
  *                                            interpolations (`${…}`) for dynamic evaluation.
@@ -997,10 +997,13 @@ async function generateServerComponentHTML(componentPath) {
  * @returns {Promise<string>} A promise that resolves to a string containing
  *                            the `<template>` HTML for hydration.
  */
-export async function processClientComponent(componentName, originalPath, props = {}) {
+export async function processClientComponent(componentName, componentAbsPath, props = {}) {
   const targetId = `client-${componentName}-${Date.now()}`;
 
-  const componentImport = generateComponentId(originalPath)
+  // componentAbsPath is the absolute resolved path — generateComponentId strips ROOT_DIR
+  // internally, so this produces the same hash as the bundle filename written by
+  // generateComponentAndFillCache (which also calls generateComponentId with the abs path).
+  const componentImport = generateComponentId(componentAbsPath);
   const propsJson = serializeClientComponentProps(props);
   const html = `<template id="${targetId}" data-client:component="${componentImport}" data-client:props='${propsJson}'></template>`;
   

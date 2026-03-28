@@ -128,7 +128,7 @@ async function renderClientComponents(html, clientComponents) {
   let processedHtml = html;
   const allScripts = [];
 
-  for (const [componentName, { originalPath }] of clientComponents.entries()) {
+  for (const [componentName, { path: componentAbsPath }] of clientComponents.entries()) {
     const escapedName = componentName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
     const componentRegex = new RegExp(
@@ -156,7 +156,7 @@ async function renderClientComponents(html, clientComponents) {
     for (let i = replacements.length - 1; i >= 0; i--) {
       const { start, end, attrs } = replacements[i];
 
-      const htmlComponent = await processClientComponent(componentName, originalPath, attrs);
+      const htmlComponent = await processClientComponent(componentName, componentAbsPath, attrs);
 
       processedHtml =
         processedHtml.slice(0, start) +

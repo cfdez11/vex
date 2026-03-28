@@ -811,7 +811,7 @@ export async function saveClientComponentModule(componentName, jsModuleCode) {
  *   importPath: string
  * }}
  */
-export async function getImportData(importPath) {
+export async function getImportData(importPath, callerFilePath = null) {
   let resolvedPath;
   if (importPath.startsWith("vex/server/")) {
     resolvedPath = path.resolve(FRAMEWORK_DIR, importPath.replace("vex/server/", "server/"));
@@ -821,6 +821,11 @@ export async function getImportData(importPath) {
     resolvedPath = path.resolve(FRAMEWORK_DIR, importPath.replace(".app/server/", "server/"));
   } else if (importPath.startsWith(".app/")) {
     resolvedPath = path.resolve(FRAMEWORK_DIR, importPath.replace(".app/", ""));
+  } else if ((importPath.startsWith("./") || importPath.startsWith("../")) && callerFilePath) {
+    // Relative import — resolve against the caller component's directory, not ROOT_DIR.
+    // Without this, `import Foo from './foo.vex'` inside a nested component would be
+    // resolved from the project root instead of from the file that contains the import.
+    resolvedPath = path.resolve(path.dirname(callerFilePath), importPath);
   } else {
     resolvedPath = path.resolve(ROOT_DIR, importPath);
   }
