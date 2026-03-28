@@ -123,6 +123,7 @@ function handleConditionalChain(parent, children, startIndex, markers, values) {
     }
 
     if (element.hasAttribute('x-if')) {
+      if (chain.length > 0) break; // second x-if starts a new independent chain
       chain.push({
         element,
         type: 'if',
