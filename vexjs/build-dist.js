@@ -78,7 +78,6 @@ const shared = {
   format: "esm",
   minifyWhitespace: true,
   minifySyntax: true,
-  minifyIdentifiers: false,
   legalComments: "none",
   logLevel: "silent",
 };
@@ -88,6 +87,8 @@ console.log("🧹 Cleaning dist/...");
 await fs.rm(DIST, { recursive: true, force: true });
 
 // Step 2: Transform server + bin files (Node.js platform).
+// minifyIdentifiers is disabled here to preserve readable function names
+// in stack traces, which developers see when the framework throws errors.
 console.log("⚙️  Building server + bin...");
 const serverFiles = await collectJs(path.join(ROOT, "server"));
 const binFiles = await collectJs(path.join(ROOT, "bin"));
@@ -95,17 +96,20 @@ await esbuild.build({
   ...shared,
   entryPoints: [...serverFiles, ...binFiles],
   platform: "node",
+  minifyIdentifiers: false,
 });
 
 // Step 3: Transform client files (browser platform).
-// Separate pass from server so esbuild applies browser-appropriate
-// syntax assumptions (no process, no __dirname, etc.).
+// minifyIdentifiers is enabled here — these files are served to end-user
+// browsers where stack traces are irrelevant, so full minification is safe.
+// ESM exports are preserved by esbuild regardless of this flag.
 console.log("⚙️  Building client...");
 const clientFiles = await collectJs(path.join(ROOT, "client"));
 await esbuild.build({
   ...shared,
   entryPoints: clientFiles,
   platform: "browser",
+  minifyIdentifiers: true,
 });
 
 // Step 4: Restore shebang in bin/vex.js.
