@@ -1,6 +1,6 @@
 {
   "name": "@cfdez11/vex",
-  "version": "0.10.2",
+  "version": "0.10.3",
   "description": "A vanilla JavaScript meta-framework with file-based routing, SSR/CSR/SSG/ISR and Vue-like reactivity",
   "type": "module",
   "main": "./dist/server/index.js",
