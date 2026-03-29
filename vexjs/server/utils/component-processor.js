@@ -284,7 +284,9 @@ async function _processHtmlFile(filePath) {
   if (serverMatch) {
     const scriptContent = serverMatch[1];
     const { componentRegistry, imports } = await getScriptImports(
-      scriptContent
+      scriptContent,
+      false,
+      filePath
     );
 
     serverComponents = componentRegistry;

@@ -55,11 +55,7 @@ function isEmptyTextNode(node) {
  */
 function parseHTMLToNodes(html) {
   try {
-    const cleanHtml = html
-      .replace(/[\r\n\t]+/g, " ")
-      .replace(/ +/g, " ")
-      .trim();
-    const dom = parseDocument(cleanHtml, { xmlMode: true });
+    const dom = parseDocument(html, { xmlMode: true });
     return DomUtils.getChildren(dom);
   } catch (error) {
     console.error('Error parsing HTML:', error);
