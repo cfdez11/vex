@@ -51,13 +51,13 @@
    * @param {HTMLElement|Document} [container=document] - The root container to scan for components.
    */
   async function hydrateComponents(container = document, props = {}) {
-    const markers = container.querySelectorAll(
-      "[data-client\\:component]:not([data-hydrated='true'])"
-    );
-
-    for (const marker of markers) {
-      await hydrateMarker(marker, props);
-    }
+    let markers;
+    do {
+      markers = container.querySelectorAll(
+        "[data-client\\:component]:not([data-hydrated='true'])"
+      );
+      await Promise.all([...markers].map((marker) => hydrateMarker(marker, props)));
+    } while (markers.length > 0);
   }
 
   /**

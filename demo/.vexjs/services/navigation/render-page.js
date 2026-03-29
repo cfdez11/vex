@@ -27,6 +27,11 @@ export async function renderPage({ route, layoutRenderer }) {
   const marker = document.createElement("template");
   const pageNode = mod.hydrateClientComponent(marker);
 
+  // Hydrate all nested client components inside the page node before inserting
+  // it into the visible DOM. Renders a full component tree
+  // in one pass — native HTML and components appear together, preventing CLS
+  await hydrateComponents(pageNode);
+
   const { node, layoutId, metadata } = await layoutRenderer.generate({
     routeLayouts: route.layouts,
     pageNode,
@@ -41,5 +46,4 @@ export async function renderPage({ route, layoutRenderer }) {
   }
 
   if (metadata) addMetadata(metadata);
-  hydrateComponents();
 }
