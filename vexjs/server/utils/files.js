@@ -101,15 +101,8 @@ export const WATCH_IGNORE = new Set([
  *   → "wip"               added to WATCH_IGNORE  (directory name)
  *   → "utils/legacy.js"   added to WATCH_IGNORE_FILES (glob pattern)
  *   → "components/wip/**" added to WATCH_IGNORE_FILES (glob pattern)
- *
- * Default entries cover common server entry-point filenames that should never
- * be bundled as client utilities (they import Node built-ins and would fail
- * esbuild's browser-platform pass).
  */
-export const WATCH_IGNORE_FILES = [
-  "server.js",
-  ...(_vexConfig.watchIgnore || []).filter(p => /[\/\*\.]/.test(p)),
-];
+export const WATCH_IGNORE_FILES = (_vexConfig.watchIgnore || []).filter(p => /[\/\*\.]/.test(p));
 
 export const PAGES_DIR = path.resolve(SRC_DIR, "pages");
 export const SERVER_APP_DIR = path.join(FRAMEWORK_DIR, "server");
