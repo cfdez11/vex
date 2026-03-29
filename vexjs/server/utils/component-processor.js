@@ -1602,6 +1602,8 @@ async function buildUserFiles() {
       if (entry.isDirectory()) {
         await collect(full);
       } else if (entry.name.endsWith(".js")) {
+        const rel = path.relative(SRC_DIR, full).replace(/\\/g, "/");
+        if (WATCH_IGNORE_FILES.some(pattern => path.matchesGlob(rel, pattern))) return;
         try {
           await buildUserFile(full);
         } catch (e) {
