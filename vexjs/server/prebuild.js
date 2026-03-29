@@ -11,3 +11,5 @@ console.log("⚙️  Generating components and routes...");
 await build();
 
 console.log("✅ Prebuild complete!");
+
+process.exit(0);
