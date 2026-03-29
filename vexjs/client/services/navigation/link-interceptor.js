@@ -34,6 +34,6 @@ export function setupLinkInterceptor(navigate) {
     }
 
     event.preventDefault();
-    navigate(url.pathname);
+    navigate(url.pathname + url.hash);
   });
 }
